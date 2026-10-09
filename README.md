@@ -1,3 +1,3 @@
-# Millennium Trailers 2D Configurator (demo)
+# Enclosed Trailer 2D Configurator (demo)
 
-Proof-of-concept configurator. Photos: Millennium Trailers.
+Proof-of-concept configurator.
