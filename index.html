@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Millennium Trailers — 2D Configurator Concept (sample)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- PROOF-OF-CONCEPT SAMPLE FRAMES — NOT PRODUCTION CODE. Self-contained: inline SVG + CSS + JS, no network.
+     Built by src/build.py from src/template.html + trailer_options.json (form) + lq_layouts.json (LQ rules table). -->
+<style>
+  :root { --ui:"Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif; --mono:"DejaVu Sans Mono",Consolas,Menlo,monospace; --acc:#1d5fb4; }
+  body.rl { --acc:#a86b00; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:var(--ui); background:#e9edf2; color:#1d2733; }
+  header { display:flex; align-items:center; gap:24px; padding:10px 22px; background:#0f1d2e; color:#fff; height:64px; position:sticky; top:0; z-index:5; }
+  header h1 { font-size:21px; margin:0; font-weight:700; white-space:nowrap; }
+  header .sub { font-size:12px; color:#9fb2c8; margin-top:2px; }
+  .spacer { flex:1; }
+  .plat { font:700 13.5px var(--ui); color:#1b1b1b; background:linear-gradient(#f4f6f8,#c9cfd5); border:2px solid #fff; border-radius:999px; padding:9px 16px; text-decoration:none; white-space:nowrap; box-shadow:0 0 0 2px #6f7a86; }
+  .plat:hover { background:#fff; }
+  .toggle { display:flex; align-items:center; gap:10px; }
+  .toggle .lbl { font-size:12px; color:#9fb2c8; text-transform:uppercase; letter-spacing:1px; }
+  .seg { display:flex; background:#22344b; border-radius:999px; padding:4px; border:2px solid #3d5776; }
+  .seg button { font:600 15px var(--ui); border:0; background:transparent; color:#c9d6e5; padding:9px 22px; border-radius:999px; cursor:pointer; display:flex; align-items:center; gap:8px; }
+  .seg button svg { width:18px; height:18px; }
+  .seg button.on[data-style=blueprint] { background:#1d5fb4; color:#fff; box-shadow:0 0 0 2px #8cc4ff inset; }
+  .seg button.on[data-style=realistic] { background:#f0b429; color:#1b1b1b; box-shadow:0 0 0 2px #fff3c4 inset; }
+  main { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:12px; padding:12px 14px; align-items:start; }
+  .frames { display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .card { background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.12); overflow:hidden; }
+  .ttl { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:6px 12px; border-bottom:1px solid #dde3ea; color:#2b3a4b; }
+  .tag { font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+  body.bp .tag { background:#1d5fb4; color:#fff; } body.rl .tag { background:#f0b429; color:#1b1b1b; }
+  svg.view { display:block; width:100%; height:auto; }
+  svg .t { font-family:var(--ui); } body.bp svg .t { font-family:var(--mono); }
+  .row3 { display:grid; grid-template-columns:1.05fr 1.35fr 1fr; gap:10px; }
+  .pz { position:relative; overflow:hidden; touch-action:pan-y; }
+  .pz.zoomed { touch-action:none; cursor:grab; }
+  .pz #plan { transform-origin:0 0; will-change:transform; }
+  .pz-reset { position:absolute; right:8px; top:8px; font:700 13px var(--ui); border:0; border-radius:8px; padding:8px 12px; background:#0f1d2e; color:#fff; opacity:.9; min-height:40px; }
+  .pz-hint { display:none; position:absolute; left:8px; bottom:6px; font-size:11px; background:rgba(255,255,255,.85); color:#2b3a4b; padding:2px 7px; border-radius:6px; pointer-events:none; }
+  /* ---------- responsive: tablet / phone ---------- */
+  @media (max-width: 1100px) {
+    header { height:auto; flex-wrap:wrap; gap:10px 16px; padding:10px 14px; position:static; }
+    header h1 { white-space:normal; font-size:18px; }
+    main { grid-template-columns:minmax(0,1fr); }
+    .row3 { grid-template-columns:1fr; }
+    main { display:flex; flex-direction:column; }
+    .frames { display:contents; }
+    .frames > .card:nth-child(-n+3) { order:1; }
+    aside#controls { order:2; }
+    .frames > .row3, .frames > .card:nth-child(n+5) { order:3; }
+  }
+  @media (max-width: 640px) {
+    header h1 { font-size:16px; } header .sub { font-size:11px; }
+    header .spacer { display:none; }
+    .plat { width:100%; text-align:center; padding:11px 14px; font-size:14px; }
+    .toggle { width:100%; justify-content:space-between; } .seg { flex:1; } .seg button { flex:1; justify-content:center; padding:10px 8px; min-height:44px; }
+    main { padding:8px; gap:8px; }
+    .ttl { font-size:11px; padding:6px 8px; flex-wrap:wrap; }
+    .pz-hint { display:block; }
+    aside { font-size:14px; padding:10px; }
+    aside .ctl { grid-template-columns:1fr; gap:3px; }
+    aside select, aside input[type=number] { font-size:16px; min-height:44px; width:100%; }
+    aside input[type=range] { height:40px; width:100%; }
+    aside .stepper button { min-width:44px; min-height:44px; font-size:18px; }
+    aside .stepper input[type=number] { width:70px; }
+    aside label.chk { display:flex; align-items:center; gap:8px; min-height:40px; flex-wrap:wrap; }
+    aside input[type=checkbox], aside input[type=radio] { width:22px; height:22px; }
+    #btn-photos { min-height:48px; font-size:15px !important; }
+    #cfgtable { font-size:12px; width:100%; } #cfgtable tr { display:grid; grid-template-columns:42% 58%; border-bottom:1px solid #eef1f4; } #cfgtable td { width:auto !important; word-break:normal; overflow-wrap:break-word; padding:3px 4px; }
+    .legend { grid-template-columns:1fr 1fr; }
+  }
+  .pad { padding:8px 12px 10px; font-size:11.5px; line-height:1.38; }
+  aside { padding:10px 12px; font-size:12px; }
+  aside h2 { font-size:12px; margin:10px 0 5px; text-transform:uppercase; letter-spacing:.7px; color:#2b3a4b; border-bottom:1px solid #e3e8ee; padding-bottom:3px; }
+  aside h2:first-child { margin-top:0; }
+  .ctl { display:grid; grid-template-columns:104px 1fr; gap:4px 8px; align-items:center; }
+  .ctl > label { font-weight:600; color:#3b4a5b; }
+  select, input[type=number] { font:12px var(--ui); padding:2px 4px; border:1px solid #c3ccd6; border-radius:5px; background:#f8fafc; width:100%; }
+  select:disabled, input:disabled { opacity:.55; }
+  .why { grid-column:1 / -1; font-size:10.5px; color:#b04a00; margin:-2px 0 2px; }
+  .why:empty { display:none; }
+  .lenbox { background:#f2f6fb; border:1px solid #d3deea; border-radius:8px; padding:7px 9px 4px; margin:2px 0 4px; }
+  .lenbox .big { display:flex; justify-content:space-between; align-items:baseline; }
+  .lenbox .big b { font-size:24px; color:var(--acc); } .lenbox .big span { font-size:11px; color:#5d6b7b; }
+  .lenbox input[type=range] { width:100%; accent-color:var(--acc); margin:4px 0 0; }
+  .ticks { display:flex; justify-content:space-between; font-size:9.5px; color:#5d6b7b; padding:0 3px; }
+  .ticks span.x { color:#c62828; text-decoration:line-through; }
+  .stepper { display:flex; align-items:center; gap:4px; } .stepper button { width:24px; height:22px; border:1px solid #c3ccd6; background:#f1f4f7; border-radius:5px; cursor:pointer; font-weight:700; }
+  .stepper input { width:52px; text-align:center; } .stepper .mx { font-size:10.5px; color:#5d6b7b; }
+  .chk { display:flex; align-items:center; gap:6px; padding:2px 0; } .chk.dis { color:#8a96a3; }
+  .chk .inc { font-size:10px; font-weight:700; color:#fff; background:#2e7d32; border-radius:4px; padding:0 5px; }
+  .chk .req { font-size:10px; color:#b04a00; }
+  .radio { display:flex; gap:10px; font-size:11.5px; }
+  .notice { margin:0; padding:0; list-style:none; } .notice li { padding:3px 0 3px 18px; position:relative; border-bottom:1px dashed #e3e8ee; }
+  .notice li:before { position:absolute; left:0; top:3px; font-weight:800; }
+  .notice li.fix:before { content:"↺"; color:#b04a00; } .notice li.warn:before { content:"!"; color:#c62828; left:5px; } .notice li.info:before { content:"i"; color:#1d5fb4; left:5px; font-style:italic; }
+  .rec { font-size:9.5px; font-weight:700; color:#6b4fa0; border:1px solid #cdbfe6; border-radius:3px; padding:0 3px; margin-left:3px; white-space:nowrap; }
+  table { width:100%; border-collapse:collapse; } td, th { padding:2px 4px; border-bottom:1px solid #eef1f4; vertical-align:top; line-height:1.25; font-size:11px; text-align:left; }
+  th { font-size:10.5px; color:#5d6b7b; text-transform:uppercase; letter-spacing:.4px; }
+  td.k { color:#5d6b7b; width:40%; } td.v { font-weight:600; }
+  tr.live td.v { color:var(--acc); } td.sel, th.sel { background:#fff5d6; } body.bp td.sel, body.bp th.sel { background:#e3eefc; }
+  .pk td { font-size:10.5px; }
+  .legend { display:grid; grid-template-columns:1fr 1fr; gap:2px 8px; } .legend div { display:flex; align-items:center; gap:6px; font-size:10.8px; }
+  .legend svg { width:34px; height:20px; flex:none; border-radius:3px; }
+  body.bp .legend svg { background:#1b4a8a; } body.rl .legend svg { background:#eef1f4; }
+</style>
+</head>
+<body class="bp">
+<header>
+  <div>
+    <h1>Millennium Trailers — 2D Configurator Concept (sample)</h1>
+    <div class="sub">Proof-of-concept sample frames · not production code · no prices · options from the “DYOT Enclosed” form + proposed packages &amp; LQ rules (recommendations)</div>
+  </div>
+  <div class="spacer"></div>
+  <a id="btn-plat" class="plat" href="#" target="_blank" rel="noopener">View Millennium Platinum inventory ↗</a>
+  <div class="toggle">
+    <span class="lbl">Drawing style</span>
+    <div class="seg" role="tablist">
+      <button id="btn-blueprint" data-style="blueprint" class="on"><svg viewBox="0 0 20 20"><rect x="2" y="2" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2 8h16M2 13h16M8 2v16M13 2v16" stroke="currentColor" stroke-width=".8" opacity=".7"/></svg>Blueprint</button>
+      <button id="btn-realistic" data-style="realistic"><svg viewBox="0 0 20 20"><defs><linearGradient id="ig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#888"/></linearGradient></defs><rect x="2" y="4" width="16" height="9" rx="2" fill="url(#ig)" stroke="currentColor"/><circle cx="7" cy="15" r="2.6" fill="currentColor"/><circle cx="13" cy="15" r="2.6" fill="currentColor"/></svg>Realistic</button>
+    </div>
+  </div>
+</header>
+<main>
+  <section class="frames">
+    <div class="card"><div class="ttl"><span id="t-curb">Side elevation — curbside</span><span class="tag tg"></span></div><svg class="view" id="sideC" viewBox="0 0 1200 400"></svg></div>
+    <div class="card"><div class="ttl"><span id="t-road">Side elevation — roadside</span><span class="tag tg"></span></div><svg class="view" id="sideR" viewBox="0 0 1200 400"></svg></div>
+    <div class="card"><div class="ttl"><span id="t-plan">Floor plan</span><span class="tag tg"></span></div><div class="pz" id="pz"><svg class="view" id="plan" viewBox="0 0 1200 380"></svg><button class="pz-reset" id="pz-reset" hidden>Reset zoom</button><div class="pz-hint">Pinch / drag to zoom · double-tap to reset</div></div></div>
+    <div class="row3">
+      <div class="card"><div class="ttl">Rules &amp; notices</div><div class="pad"><ul class="notice" id="notices"></ul></div></div>
+      <div class="card"><div class="ttl">Selected package summary <span class="rec">PROPOSED · NO PRICES</span></div><div class="pad" id="summary"></div></div>
+      <div class="card"><div class="ttl">Legend <span class="tag tg"></span></div><div class="pad"><div class="legend" id="legend"></div></div></div>
+    </div>
+    <div class="card"><div class="ttl">Sample config shown (form fields)</div><div class="pad"><table id="cfgtable"></table></div></div>
+  </section>
+  <aside class="card" id="controls"></aside>
+</main>
+<svg id="defs" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"></svg>
+<script>
+"use strict";
+const FORM = {"hitch": {"category": "Trailer Type & Use", "option": "Hitch Type", "choices": ["Bumper Pull", "Gooseneck", "5th Wheel"]}, "lqWanted": {"category": "Trailer Type & Use", "option": "Do you want a Living Quarters Trailer?", "choices": ["Yes", "No"]}, "rearDoor": {"category": "Trailer Type & Use", "option": "Rear Door", "choices": ["Ramp", "Double Cargo Doors"]}, "use": {"category": "Trailer Type & Use", "option": "How are you going to use?", "choices": ["Car Hauler", "Cargo", "Food Services", "Office", "Mobile Retail", "Command Center", "Motorcycle", "BBQ With Back Porch", "Other"]}, "lenGN": {"category": "Size – Gooseneck / 5th Wheel", "option": "Trailer Length", "choices": ["36", "38", "40", "42", "44", "46", "48", "50", "52"]}, "lenGNno": {"category": "Size – Gooseneck / 5th Wheel", "option": "Trailer Length", "choices": ["28", "30", "32", "34", "36", "38", "40", "42", "44", "46", "48", "50", "52", "53"]}, "lenBP": {"category": "Size – Bumper Pull", "option": "Trailer Length", "choices": ["24", "26", "28", "30", "32", "34"]}, "lenBPno": {"category": "Size – Bumper Pull", "option": "Trailer Length", "choices": ["10", "12", "14", "16", "18", "20", "22", "24", "26", "28", "30", "32", "34"]}, "lqGN": {"category": "Living Quarters", "option": "Living Quarters Size", "choices": ["12", "14", "16"]}, "lqBP": {"category": "Living Quarters", "option": "Living Quarters Size", "choices": ["8", "12", "14", "16"]}, "bath": {"category": "Living Quarters", "option": "Bathroom Type", "choices": ["Rectangular Bath", "Corner Bath"]}, "acLQ": {"category": "Living Quarters", "option": "A/C For Living Quarters Area", "choices": ["Yes", "No"]}, "lqOpts": {"category": "Living Quarters", "option": "Additional Living Quarters Options", "choices": ["Electronic Ignition for Water Heater", "AM/FM Stereo with CD Player", "Antenna w/Cable Hook-up for Television", "Gas Package: Includes: Furnace, Cook Top Burner, Gas Hot Water Tank, Gas Refrigerator, Co2 Monitor, 2-Gas Tanks. (Not Available in 10'6\" Motorcycle LQ)"]}, "genComp": {"category": "Exterior Compartments, Wheels & Kitchen", "option": "Generator Door & Compartment", "choices": ["Yes", "No"]}, "spare": {"category": "Exterior Compartments, Wheels & Kitchen", "option": "Spare Tire Storage", "choices": ["None", "Recessed Spare Tire Compartment", "Interior Spare Tire Mount", "Exterior Spare Tire Mount"]}, "alumWheels": {"category": "Exterior Compartments, Wheels & Kitchen", "option": "Upgrade to aluminum wheels", "choices": ["Yes", "No"]}, "acCargo": {"category": "A/C & Generator", "option": "A/C In The Cargo Area", "choices": ["Yes", "No"]}, "generator": {"category": "A/C & Generator", "option": "Generator", "choices": ["No", "5.5 Onan Commercial Generator with Built In Fuel Cell Installed Under Trailer", "7.0 Onan Commercial Generator with Built In Fuel Cell Installed Under Trailer", "10 Onan Commercial Generator with Built In Fuel Cell Installed Under Trailer", "Prep Package for Portable Generator"]}, "tiedown": {"category": "Tie-Downs, Flooring & Cabinets", "option": "Tie Down System", "choices": ["D-Rings Loose", "D-Rings Installed", "E-Track"]}, "floor": {"category": "Tie-Downs, Flooring & Cabinets", "option": "Floor Covering", "choices": ["None", "TPO Euro Black Coin", "Black and Grey Marble Vinyl", "Aluminum Tread Plate (ATP)"]}, "cabinets": {"category": "Tie-Downs, Flooring & Cabinets", "option": "Require Cabinets", "choices": ["Yes", "No"]}, "walls": {"category": "Cargo Area (Walls, Insulation, Electrical, Lighting)", "option": "Select Wall Material", "choices": ["White Vinyl", "Aluminum Walls", "Aluminum Walls with 36\" of Carpet at Bottom"]}, "insul": {"category": "Cargo Area (Walls, Insulation, Electrical, Lighting)", "option": "Insulate Cargo Area", "choices": ["Insulate Walls", "Insulate Ceiling"]}, "elec": {"category": "Cargo Area (Walls, Insulation, Electrical, Lighting)", "option": "110V Electrical Packages", "choices": ["None", "Basic Package", "Deluxe Package", "Premium"]}, "led": {"category": "Cargo Area (Walls, Insulation, Electrical, Lighting)", "option": "LED Lighting", "choices": ["Yes", "No"]}, "addl": {"category": "Additional Options, Jack & Winch", "option": "Select Additional Options", "choices": ["Spare Tire", "Awning", "Vendor Door", "Escape Door (roadside door over wheel wells)", "Escape Door Removable Wheel Box", "Observation deck", "Windows (Std on LQ)"]}, "jack": {"category": "Additional Options, Jack & Winch", "option": "Upgrade Manual Jack", "choices": ["No", "Power Assist (Electric for Bumper Pull, Hydraulic for Gooseneck)"]}, "winch": {"category": "Additional Options, Jack & Winch", "option": "Winch", "choices": ["None", "Winch with Remote and 12v Battery", "Recessed Winch in Floor with Remote and 12v Battery"]}, "color": {"category": "Exterior Color, Fasteners & Trade-In", "option": "Select Your Color", "choices": ["White", "Black", "Red", "Indigo Blue", "Silver", "Metallic Charcoal", "Metallic Pewter,", "Other"]}, "fasteners": {"category": "Exterior Color, Fasteners & Trade-In", "option": "Exterior Fasteners", "choices": ["Screwless", "Screws"]}};
+const RULES = {"status": "PROPOSED data model (recommendation) for Millennium Trailers 2D configurator; not a Vintage or Millennium specification", "gnDeck": 8, "minCargo": 16, "minCargoNote": "Recommendation. Keeps Millennium's current 36 ft minimum valid for a 12 ft LQ (36-12-8=16). Suggest a UI warning when cargo < 20 ft (shorter than a typical car + ramp clearance). Not a Vintage rule.", "warnCargo": 20, "slideExtraIn": 12, "gn": [{"id": "LQ12_SOFA", "label": "12' Sofa (default)", "lq": 12, "default": true, "minLen": 36, "allowedLengths": [36, 38, 40, 42, 44, 46, 48, 50, 52], "ruleNote": null, "baths": ["Rectangular", "Corner"], "slideBoxLen": 12, "slideVariants": ["12 LQ RBS Sofa / Dinette", "12 LQ RKS Sofa / Dinette"], "rooms": {"gn_deck": ["Queen bed", "Closet across front wall"], "curbside": ["6' sleeper sofa w/ overhead cabinet above", "Closet", "Entry door at rear curbside (LQ door)", "Overhead cabinet by door"], "roadside": ["Galley: sink + 2-burner stove, OH cabinet w/ microwave", "Refrigerator (8.0 cu ft gas std on GN LQ)"], "rear": ["Bathroom at rear roadside: toilet, lav (vanity), shower; corner-shower variant available"], "bulkhead": "Wall between LQ and cargo (bath forms part of bulkhead)"}, "vintage": ["12 LQ Sofa", "12 Sofa w/ Corner Bath"]}, {"id": "LQ14", "label": "14' LQ", "lq": 14, "default": false, "minLen": 38, "allowedLengths": [38, 40, 42, 44, 46, 48, 50, 52], "ruleNote": "14'6\" CB sub-layout: min 40 (cargo 17.5)", "baths": ["Rectangular"], "slideBoxLen": 14, "slideVariants": ["14 LQ RBS Dinette or Sofa", "14 FBS Dinette or Sofa", "14 FKS Dinette or Sofa", "14 LQ SDS Dinette"], "rooms": {"14' Rear Bath (sofa)": {"gn_deck": ["Queen bed", "Closet"], "curbside": ["Sofa w/ OH cab", "Storage", "Step to GN"], "roadside": ["Stove + double sink, OH cab w/ micro", "Refrigerator", "Pantry", "TV/closet"], "rear": ["Full-width rear bath: linen, toilet, lav, shower"]}, "14' Sofa + Dinette": {"gn_deck": ["Queen bed", "Closet"], "curbside": ["Sofa w/ OH cab"], "roadside": ["Dinette w/ OH cab", "Galley: stove, sink, refrigerator closet, TV closet"], "rear": ["Bath: lav, toilet, shower"]}, "14'6\" Corner Bath": {"gn_deck": ["Queen bed", "Closet"], "curbside": ["Dinette w/ OH cab"], "roadside": ["66\" sofa w/ overhead", "8.0 refrigerator", "Converter", "Galley w/ OH cab & micro"], "rear": ["Corner shower bath w/ lav, toilet; linen"]}}, "vintage": ["14 LQ RB", "14 LQ SD", "14'6\" CB"]}, {"id": "LQ16", "label": "16' LQ (Bunks)", "lq": 16, "default": false, "minLen": 40, "allowedLengths": [40, 42, 44, 46, 48, 50, 52], "ruleNote": "16'3\" slide variants: min 42", "baths": ["Rectangular"], "slideBoxLen": 16.25, "slideVariants": ["16'3\" LQ Slide", "16'3\" RBS LQ Dinette"], "rooms": {"gn_deck": ["Queen bed", "Closet"], "curbside": ["Dinette w/ OH cab", "Entry door", "Bunks at rear curbside"], "roadside": ["Sofa w/ OH cab", "Galley: stove, sink, OH cab w/ micro", "Refrigerator"], "rear": ["Bath at rear roadside: shower, toilet, lav"]}, "vintage": ["16 LQ Bunks"]}], "bp": [{"id": "BP_LQ8", "label": "8' LQ (bumper pull)", "lq": 8, "minLen": 24, "ruleNote": "Millennium form offers 8' for BP; Vintage equivalent closest: X-Sport FK (24-34') / RVT 10'6\"", "baths": ["Rectangular"]}, {"id": "BP_LQ12", "label": "12' LQ (bumper pull)", "lq": 12, "minLen": 26, "ruleNote": "12 LQ SD tag", "baths": ["Rectangular", "Corner"]}, {"id": "BP_LQ14", "label": "14' LQ (bumper pull)", "lq": 14, "minLen": 28, "ruleNote": "14 LQ SD tag", "baths": ["Rectangular"]}, {"id": "BP_LQ16", "label": "16' LQ (bumper pull)", "lq": 16, "minLen": 32, "ruleNote": "No Vintage 16' tag plan published", "baths": ["Rectangular"]}], "bpSlideAllowed": false, "slide": {"content": ["Sofa", "Dinette"], "placement": "Box wall immediately aft of the gooseneck step (forward of axles); requires a 'removable step' to GN deck per Vintage plans", "side": "curbside", "excludes": ["Escape door / vendor door / awning on the slide side within the slide span"]}, "tripleAxleMinLen": 44, "deps": [{"when": "LQ=Yes AND hitch in [Gooseneck,5th Wheel]", "then": "include Gas Package (furnace, cooktop, gas DSI water heater, gas fridge, LP/CO detectors, LP bottles), hydraulic jack, monitor panel, 60 fresh/60 grey/30 black tanks", "type": "vintage_published"}, {"when": "LQ=Yes AND hitch=Bumper Pull", "then": "Gas Package optional; fresh tank 30-51 gal", "type": "vintage_published"}, {"when": "LQ=Yes", "then": "wired for A/C; battery box + converter; egress window; insulated walls/ceiling; porch light", "type": "vintage_published"}, {"when": "bath=Corner", "then": "allowed only on 12 Sofa / 12 Dinette (or 14'6\" CB)", "type": "vintage_published"}, {"when": "slide_out=Yes", "then": "extra_height_in >= 12", "type": "vintage_published"}, {"when": "LQ A/C=Yes AND cargo A/C=Yes OR generator >= 7.0 kW", "then": "require 50A panel", "type": "recommendation"}, {"when": "LQ=Yes AND hitch in [Gooseneck,5th Wheel] AND trailer_length>=44", "then": "recommend triple axles / >= 18,000 GVWR", "type": "recommendation"}, {"when": "LQ=Yes", "then": "partition wall at LQ/cargo with door (Vintage RVT std 'Pass Thru Door to Cargo Area')", "type": "vintage_published_for_RVT; recommendation for LQ"}], "cornerOnly": [12]};   // derived from trailer-research/lq_layouts.json (swappable)
+
+const COLORS = { 'White':'#eef0f2','Black':'#1e2024','Red':'#b0191f','Indigo Blue':'#27366f','Silver':'#bcc2c8',
+  'Metallic Charcoal':'#3e4248','Metallic Pewter':'#7c8087','Other':'#9a8f7a' };
+const clean = s => String(s).replace(/,\s*$/,'').trim();
+// ---------- helpers ----------
+const f = n => (Math.round(n*10)/10);
+function hex2rgb(h){ h=h.replace('#',''); return [0,2,4].map(i=>parseInt(h.substr(i,2),16)); }
+function mix(h, t, a){ const c=hex2rgb(h), d=hex2rgb(t); return '#'+c.map((v,i)=>Math.round(v+(d[i]-v)*a).toString(16).padStart(2,'0')).join(''); }
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const _cv = document.createElement('canvas').getContext('2d');
+function tw(text, size, mono, weight){ _cv.font = `${weight||400} ${size}px ${mono?'"DejaVu Sans Mono",Consolas,monospace':'Inter,"Segoe UI",Roboto,Arial,sans-serif'}`; return _cv.measureText(text).width; }
+
+
+// Millennium Platinum (= Vintage Pro Stock) inventory listings on milltrailers.com — single config constant
+const PLATINUM_INVENTORY_URL = 'https://www.milltrailers.com/?s=platinum&post_type=product';   // PLACEHOLDER until the verified listing URL is supplied
+
+// =====================================================================
+// PACKAGE DATA TABLES (proposed tiers from lighting_cabinet_research.md; recommendations, no prices)
+// =====================================================================
+const ELEC = {
+  'None':           { tier:0, short:'None',    amps:'—',   leds:2,  battery:'12V battery, charge line from tow vehicle (assumed)', incl:[],
+                      items:['12V shell lighting only: 2 dome lights (assumed)'] },
+  'Basic Package':  { tier:1, short:'Basic',   amps:'30A', leds:6,  battery:'Deep-cycle battery + converter/charger', incl:['loadLights'],
+                      items:['30A panel, motorbase plug, 25 ft cord','~6 interior LED ceiling fixtures','Deep-cycle battery + 45–60A converter/charger','110V outlets: 3 interior + 1 exterior GFI','Rear load lights (2)'] },
+  'Deluxe Package': { tier:2, short:'Deluxe',  amps:'50A', leds:8,  battery:'Deep-cycle battery + converter/charger', incl:['loadLights','sceneCurb'], acWiring:true, genPrep:true, solar:'optional',
+                      items:['50A panel, 50A motorbase, 25 ft cord','~8 interior LED ceiling fixtures, 3-way switches','Battery + converter, 12V fuse panel, battery cutoff','110V outlets: 4–6 interior (USB combo) + 1 exterior GFI','Scene lights, curbside (×2) + rear load lights','Roof braced & wired for A/C','Generator compartment prep (vented, insulated)','Optional: ~30W trickle-charge solar (battery maintainer)'] },
+  'Premium':        { tier:3, short:'Premium', amps:'50A', leds:10, battery:'100Ah lithium + converter/charger', incl:['loadLights','sceneCurb','sceneRoad','underCab','accent'], acWiring:true, genPrep:true, solar:'included', ats:true,
+                      items:['50A panel (100A house-style panel possible)','~10 interior LED ceiling fixtures, labeled switch panel','100Ah lithium battery + converter/charger','110V outlets: 8+ interior + 2 exterior GFI','Scene lights both sides + rear load lights','Under-cabinet LEDs + accent/floor strip lighting','Included: ~30W trickle-charge solar (battery maintainer)','Automatic transfer switch for the Onan generators (50A gen prep)'] },
+};
+const CAB = {   // feet of roadside cargo wall; all aluminum
+  'None':   { tier:0, kitchenette:0, base:0, chest:0, closet:0, oh:0, L:false, riser:false, items:['No cargo cabinets'] },
+  'Basic':  { tier:1, kitchenette:0, base:8, chest:0, closet:0, oh:8, L:false, riser:false, items:['8 ft aluminum base cabinet / workbench','8 ft aluminum overhead cabinet','One sidewall (roadside)'] },
+  'Deluxe': { tier:2, kitchenette:0, base:6, chest:2, closet:2, oh:12, L:true, riser:false, items:['L-shaped aluminum base: front leg + 8 ft sidewall','12 ft overhead run','24" closet (full height)','2 ft integrated tool chest'] },
+  'Elite':  { tier:3, kitchenette:6, base:6, chest:2, closet:2, oh:16, L:true, riser:true, items:['Full sidewall run: 16 ft base (incl. 6 ft kitchenette: sink · fridge · microwave cabinets)','16 ft overhead run','Riser / gooseneck nose cabinets','Closet + 2 ft tool chest'] },
+};
+const cabWall = c => c.kitchenette + c.base + c.chest + c.closet;
+const LIGHTS = [
+  { id:'sceneCurb', label:'Scene lights — curbside (×2)' },
+  { id:'sceneRoad', label:'Scene lights — roadside (×2)' },
+  { id:'porch',     label:'Porch light (entry / side door)' },
+  { id:'awningLed', label:'Awning LED strip', req: c => c.addl === 'Awning' ? null : 'needs Additional Option = Awning' },
+  { id:'underCab',  label:'Under-cabinet LEDs', req: c => c.cab !== 'None' ? null : 'needs a cabinet package' },
+  { id:'accent',    label:'Accent / floor strip lighting' },
+  { id:'docking',   label:'Docking lights (rear corners)' },
+  { id:'loadLights',label:'Rear load lights' },
+  { id:'spoiler',   label:'Rear spoiler light' },
+];
+
+// =====================================================================
+// STATE (single shared selection state for every view)
+// =====================================================================
+const cfg = {
+  hitch:'Gooseneck', lqWanted:'Yes', length:'44', layout:'LQ12_SOFA', lqBP:'12', bath:'Rectangular Bath',
+  slide:false, slideContent:'Sofa', floor:'TPO Euro Black Coin', color:'White', fasteners:'Screwless', addl:'Awning',
+  acLQ:'Yes', acCargo:'No', generator:'5.5 Onan Commercial Generator with Built In Fuel Cell Installed Under Trailer', genComp:'Yes',
+  elec:'Deluxe Package', solar:false, cab:'Deluxe', extraBase:0, extraOH:0, ledPairs:1,
+  lights:{ sceneCurb:false, sceneRoad:false, porch:false, awningLed:true, underCab:false, accent:false, docking:true, loadLights:false, spoiler:false },
+  scale:'true',
+};
+const FIXED = { rearDoor:'Ramp', use:'Car Hauler', spare:'Recessed Spare Tire Compartment', alumWheels:'Yes', tiedown:['E-Track','D-Rings Installed'],
+  walls:'Aluminum Walls with 36" of Carpet at Bottom', insul:['Insulate Walls','Insulate Ceiling'], winch:'None' };
+let STYLE = 'blueprint';
+let M = null;   // resolved model
+
+const isGN = () => cfg.hitch !== 'Bumper Pull';
+const hasLQ = () => cfg.lqWanted === 'Yes';
+function formLengths(){ return FORM[isGN() ? (hasLQ() ? 'lenGN' : 'lenGNno') : (hasLQ() ? 'lenBP' : 'lenBPno')].choices; }
+function nearest(list, v){ return list.slice().sort((a,b)=> Math.abs(+a-v)-Math.abs(+b-v) || (+a)-(+b))[0]; }
+function sliderSteps(){
+  if (!isGN()) return formLengths().map(v=>({v, ok:true}));
+  const all = [...new Set([...FORM.lenGN.choices, ...FORM.lenGNno.choices])].map(Number).filter(v=> v>=36 || !hasLQ()).sort((a,b)=>a-b);
+  const valid = formLengths();
+  return all.map(v=>({ v:String(v), ok: valid.includes(String(v)), why: valid.includes(String(v)) ? '' : `${v}' is offered by the form only ${hasLQ()?'without':'with'} living quarters` }));
+}
+const genKW = () => { const m = cfg.generator.match(/^([\d.]+)\s+Onan/); return m ? +m[1] : 0; };
+const curLayouts = () => isGN() ? RULES.gn : RULES.bp;
+function curLayout(){ const L = curLayouts(); return isGN() ? (L.find(l=>l.id===cfg.layout) || L[0]) : (L.find(l=>String(l.lq)===String(cfg.lqBP)) || L[0]); }
+function layoutMin(lay, slide){
+  if (!isGN()) return lay.minLen;
+  let m = Math.max(lay.minLen || 0, RULES.gnDeck + RULES.minCargo + lay.lq);
+  if (slide && lay.slideBoxLen) { const need = RULES.gnDeck + RULES.minCargo + lay.slideBoxLen;
+    const opt = FORM.lenGN.choices.map(Number).filter(v=>v>=need); m = Math.max(m, opt.length ? opt[0] : 999); }
+  return m;
+}
+
+// ---------- geometry (feet) ----------
+function geom(L, lqDraw, slide){
+  const GN = isGN();
+  const xb = GN ? RULES.gnDeck : 4.5;          // GN: deck is part of trailer length; BP: tongue ahead of box
+  const xe = GN ? L : xb + L, c0 = xb + lqDraw;
+  const TRUE_S = 1035 / (53 + 7);               // one px/ft for every length & hitch (53' GN + 7' lowered ramp fits)
+  const S = cfg.scale === 'true' ? TRUE_S : Math.min(22, 1035 / (xe + 7));
+  const n = (GN && L >= RULES.tripleAxleMinLen) ? 3 : 2;
+  const F = xe - xb, wc = xb + F * (GN ? 0.68 : 0.57);
+  const wheels = Array.from({length:n}, (_,i)=> wc + (i-(n-1)/2)*3.0);
+  return { GN, L, xb, xe, c0, S, X0:150, wheels, wc, R:1.25, hR: 10 + (slide ? RULES.slideExtraIn/12 : 0), cargo: xe - c0, lqDraw };
+}
+// roadside cargo wall available for cabinets
+function cabinetWall(g){
+  const bs = g.c0 + (cfg.genComp === 'Yes' ? 2.6 : 0.2), end = g.xe - 1.2;
+  let segs = [[bs, end]];
+  if (cfg.addl.startsWith('Escape Door')) { const a = g.wheels[0]-1.6, b = g.wheels[g.wheels.length-1]+1.6;
+    segs = segs.flatMap(([s,e]) => [[s, Math.min(e,a)], [Math.max(s,b), e]]); }
+  return segs.filter(([s,e]) => e - s >= 0.5);
+}
+// sequential allocation of cabinet pieces along wall segments
+function allocate(segs, pieces){
+  const out = []; let si = 0, cur = segs.length ? segs[0][0] : 0;
+  for (const p of pieces) {
+    let need = p.len;
+    while (need > 1e-6) {
+      if (si >= segs.length) return { ok:false, out };
+      const room = segs[si][1] - cur;
+      if (!p.split && room < need) { si++; if (si < segs.length) cur = segs[si][0]; continue; }
+      const take = Math.min(room, need);
+      if (take > 1e-6) { out.push({ ...p, u0:cur, u1:cur+take }); cur += take; need -= take; }
+      if (need > 1e-6) { si++; if (si < segs.length) cur = segs[si][0]; }
+    }
+  }
+  return { ok:true, out };
+}
+function cabLayout(g, tierName, xBase, xOH){
+  const c = CAB[tierName]; if (!c || c.tier === 0) return { ok:true, base:[], oh:[] };
+  const segs = cabinetWall(g);
+  const pieces = [];
+  if (c.kitchenette) ['Sink','Fridge','Micro'].forEach(k=>pieces.push({ kind:'kit', name:k, len:2 }));
+  pieces.push({ kind:'base', len:c.base + xBase, split:true });
+  if (c.chest) pieces.push({ kind:'chest', len:c.chest });
+  if (c.closet) pieces.push({ kind:'closet', len:c.closet });
+  const b = allocate(segs, pieces);
+  if (!b.ok) return { ok:false };
+  const closets = b.out.filter(p=>p.kind==='closet');
+  let ohSegs = segs;
+  closets.forEach(cl => { ohSegs = ohSegs.flatMap(([s,e]) => (cl.u1<=s||cl.u0>=e) ? [[s,e]] : [[s,cl.u0],[cl.u1,e]]).filter(([s,e])=>e-s>=0.3); });
+  const o = allocate(ohSegs, [{ kind:'oh', len:c.oh + xOH, split:true }]);
+  if (!o.ok) return { ok:false };
+  return { ok:true, base:b.out, oh:o.out, L:c.L, riser:c.riser };
+}
+function maxExtra(g, tier, which, other){
+  let n = 0; while (n < 40 && cabLayout(g, tier, which==='base'? n+1 : other, which==='oh'? n+1 : other).ok) n++;
+  return n;
+}
+
+// =====================================================================
+// RESOLVE: apply form conditional logic + rules table + package dependencies
+// =====================================================================
+function resolve(){
+  const N = []; const GN = isGN(), LQ = hasLQ();
+  // 1) length must be a form choice for hitch × LQ
+  const valid = formLengths();
+  if (!valid.includes(String(cfg.length))) { const nl = nearest(valid, +cfg.length);
+    N.push(['fix', `${cfg.length}' is not a form choice for ${GN?'gooseneck/5th wheel':'bumper pull'} ${LQ?'with':'without'} living quarters → set to ${nl}'.`]); cfg.length = nl; }
+  const L = +cfg.length;
+  // 2) LQ layout vs length (rules table)
+  const lays = curLayouts().map(l => { const mn = layoutMin(l, false); return { ...l, min:mn, ok: L >= mn,
+      why: L >= mn ? '' : `needs ≥ ${mn}'` + (GN ? ` (keeps ≥ ${RULES.minCargo}' cargo)` : '') }; });
+  let lay = curLayout();
+  if (LQ) {
+    const me = lays.find(l=>l.id===lay.id);
+    if (!me.ok) { const okL = lays.filter(l=>l.ok);
+      const nl = okL.sort((a,b)=> Math.abs(a.lq-lay.lq)-Math.abs(b.lq-lay.lq) || a.lq-b.lq)[0];
+      if (nl) { N.push(['fix', `${lay.label} ${me.why} at ${L}' → switched to nearest valid layout: ${nl.label}.`]);
+        if (GN) cfg.layout = nl.id; else cfg.lqBP = String(nl.lq); lay = curLayout(); } }
+  }
+  // 3) slide-out
+  const slideMin = GN ? layoutMin(lay, true) : null;
+  const slideOk = GN && LQ && L >= slideMin && !!lay.slideBoxLen;
+  const slideWhy = !LQ ? 'needs living quarters' : !GN ? 'not allowed on bumper pull (no Vintage tag slide plan)' : !slideOk ? `${lay.label} with slide (${lay.slideBoxLen}' box) needs ≥ ${slideMin}'` : '';
+  if (cfg.slide && !slideOk) { N.push(['fix', `Slide-out removed: ${slideWhy}.`]); cfg.slide = false; }
+  const slide = LQ && cfg.slide;
+  const lqDraw = LQ ? (slide ? lay.slideBoxLen : lay.lq) : 0;
+  // 4) bath type
+  const bathOK = LQ ? lay.baths.map(b => b + ' Bath') : FORM.bath.choices;
+  if (LQ && !bathOK.includes(cfg.bath)) { N.push(['fix', `Corner bath is only offered on ${RULES.cornerOnly.join('/')}' layouts → Rectangular Bath.`]); cfg.bath = 'Rectangular Bath'; }
+  // 5) 50A requirement
+  const need50 = (LQ && cfg.acLQ === 'Yes' && cfg.acCargo === 'Yes') || genKW() >= 7;
+  const why50 = need50 ? (genKW() >= 7 ? `${genKW()} kW generator` : 'LQ A/C + cargo A/C') + ' needs a 50A panel' : '';
+  if (need50 && ELEC[cfg.elec].tier < 2) { N.push(['fix', `${why50} → electrical package set to Deluxe (50A).`]); cfg.elec = 'Deluxe Package'; }
+  const E = ELEC[cfg.elec];
+  // 6) solar (trickle-charge only)
+  if (cfg.solar && E.tier < 2) cfg.solar = false;
+  const solarOn = E.tier === 3 || (E.tier === 2 && cfg.solar);
+  // 7) geometry + cabinets
+  const g = geom(L, lqDraw, slide);
+  const cabOpts = Object.keys(CAB).map(k => { const t = CAB[k]; const ok = cabLayout(g, k, 0, 0).ok;
+    const A = cabinetWall(g).reduce((a,[s,e])=>a+e-s, 0);
+    return { k, ok, why: ok ? '' : `needs ${cabWall(t)}' base / ${t.oh}' overhead run; ${A.toFixed(1)}' roadside wall available` }; });
+  if (!cabOpts.find(o=>o.k===cfg.cab).ok) { const nl = cabOpts.filter(o=>o.ok).pop();
+    N.push(['fix', `${cfg.cab} cabinets don't fit (${cabOpts.find(o=>o.k===cfg.cab).why}) → ${nl.k}.`]); cfg.cab = nl.k; }
+  let maxB = 0, maxO = 0;
+  if (cfg.cab !== 'None') { maxB = maxExtra(g, cfg.cab, 'base', 0); 
+    if (cfg.extraBase > maxB) { N.push(['fix', `Extra base cabinet limited to ${maxB} ft by available roadside wall.`]); cfg.extraBase = maxB; }
+    maxO = maxExtra(g, cfg.cab, 'oh', cfg.extraBase);
+    // overhead extra computed with chosen base extra held fixed
+    maxO = (()=>{ let n=0; while(n<40 && cabLayout(g,cfg.cab,cfg.extraBase,n+1).ok) n++; return n; })();
+    if (cfg.extraOH > maxO) { N.push(['fix', `Extra overhead cabinet limited to ${maxO} ft by available wall.`]); cfg.extraOH = maxO; }
+  } else { cfg.extraBase = 0; cfg.extraOH = 0; }
+  const cabs = cabLayout(g, cfg.cab, cfg.extraBase, cfg.extraOH);
+  // 8) lighting à la carte
+  const lights = {};
+  LIGHTS.forEach(l => { const inclTier = E.incl.includes(l.id), inclLQ = (l.id === 'porch' && LQ);
+    const reqWhy = l.req ? l.req(cfg) : null;
+    const incl = (inclTier || inclLQ) && !reqWhy;
+    if (cfg.lights[l.id] && reqWhy && !incl) { N.push(['fix', `${l.label} unchecked: ${reqWhy}.`]); cfg.lights[l.id] = false; }
+    lights[l.id] = { on: incl || (cfg.lights[l.id] && !reqWhy), incl, by: inclTier ? `in ${E.short}` : inclLQ ? 'std with LQ' : '', dis: incl || !!reqWhy, why: reqWhy }; });
+  const leds = E.leds + 2 * cfg.ledPairs;
+  // 9) informational rules
+  if (LQ && GN && L >= RULES.tripleAxleMinLen) N.push(['info', `Triple axles recommended at ${RULES.tripleAxleMinLen}'+ with LQ — drawn with 3 axles.`]);
+  if (LQ && g.cargo < RULES.warnCargo) N.push(['warn', `Cargo area ${f(g.cargo)}' is under ${RULES.warnCargo}' (shorter than a typical car + ramp clearance).`]);
+  if (LQ && GN) N.push(['info', 'Gooseneck LQ auto-includes: Gas Package, hydraulic jack, monitor panel, 60/60/30 gal tanks.']);
+  if (slide) N.push(['info', `Slide-out: one ${cfg.slideContent.toLowerCase()} slide, curbside, behind the gooseneck step and ahead of the axles; +${RULES.slideExtraIn}" trailer height.`]);
+  if (slide && cfg.addl === 'Awning') N.push(['info', 'Awning placed aft of the slide-out (no awning within the slide span).']);
+  if (cfg.solar || E.tier === 3) N.push(['info', 'Solar is a ~30W trickle charger only (keeps batteries topped up / supports the converter).']);
+  if (need50) N.push(['info', `50A panel required: ${why50}.`]);
+  return { N, g, lay, lays, slide, slideOk, slideWhy, slideMin, bathOK, need50, why50, E, solarOn, cabOpts, maxB, maxO, cabs, lights, leds };
+}
+// ---------- theme ----------
+function theme(){
+  const R = STYLE === 'realistic';
+  return R ? { R, ink:'#26313d', dim:'#3b4652', lead:'#56626f', font:'ui', box:'rgba(255,255,255,.93)', boxStroke:'#b9c3cd', txt:'#1f2a36' }
+           : { R, ink:'#ffffff', dim:'#bfe3ff', lead:'#d6ecff', font:'mono', box:'#1b4a8a', boxStroke:'none', txt:'#ffffff' };
+}
+
+// ---------- shared defs (gradients, patterns, filters) ----------
+function buildDefs(g){
+  const base = COLORS[clean(cfg.color)] || '#ccc';
+  const dark = hex2rgb(base).reduce((a,b)=>a+b,0) < 300;
+  const S = g.S;
+  document.getElementById('defs').innerHTML = `<defs>
+  <pattern id="pGrid" width="${S}" height="${S}" patternUnits="userSpaceOnUse">
+    <path d="M ${S} 0 L 0 0 0 ${S}" fill="none" stroke="#ffffff" stroke-opacity=".10" stroke-width="1"/></pattern>
+  <pattern id="pGrid5" width="${S*5}" height="${S*5}" patternUnits="userSpaceOnUse">
+    <rect width="${S*5}" height="${S*5}" fill="url(#pGrid)"/>
+    <path d="M ${S*5} 0 L 0 0 0 ${S*5}" fill="none" stroke="#ffffff" stroke-opacity=".22" stroke-width="1"/></pattern>
+  <pattern id="bpHatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <line x1="0" y1="0" x2="0" y2="7" stroke="#fff" stroke-opacity=".45" stroke-width="1"/></pattern>
+  <pattern id="bpCross" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <path d="M0 0V8M0 0H8" stroke="#fff" stroke-opacity=".35" stroke-width=".8"/></pattern>
+  <pattern id="bpCoin" width="10" height="10" patternUnits="userSpaceOnUse">
+    <circle cx="5" cy="5" r="2.3" fill="none" stroke="#fff" stroke-opacity=".38" stroke-width=".8"/></pattern>
+  <pattern id="bpTread" width="14" height="14" patternUnits="userSpaceOnUse">
+    <path d="M2 6 L6 2 M9 12 L13 8 M8 1 L12 5 M1 8 L5 12" stroke="#fff" stroke-opacity=".38" stroke-width="1"/></pattern>
+  <pattern id="bpMarble" width="16" height="16" patternUnits="userSpaceOnUse">
+    <path d="M0 11 Q5 6 9 9 T16 5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width=".8"/><circle cx="4" cy="3" r=".8" fill="#fff" fill-opacity=".35"/></pattern>
+  <pattern id="bpPly" width="12" height="12" patternUnits="userSpaceOnUse">
+    <path d="M0 6 H12" stroke="#fff" stroke-opacity=".22" stroke-dasharray="3 3"/></pattern>
+
+  <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfdeec"/><stop offset="1" stop-color="#f3f6f9"/></linearGradient>
+  <linearGradient id="gGround" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8d939a"/><stop offset=".15" stop-color="#a7adb3"/><stop offset="1" stop-color="#c7ccd1"/></linearGradient>
+  <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="${mix(base,'#ffffff',dark?.30:.55)}"/><stop offset=".07" stop-color="${mix(base,'#ffffff',dark?.12:.25)}"/>
+    <stop offset=".45" stop-color="${base}"/><stop offset=".9" stop-color="${mix(base,'#000000',dark?.25:.10)}"/><stop offset="1" stop-color="${mix(base,'#000000',dark?.45:.28)}"/></linearGradient>
+  <linearGradient id="gBodyH" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#000" stop-opacity=".18"/><stop offset=".06" stop-color="#000" stop-opacity="0"/>
+    <stop offset=".94" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
+  <linearGradient id="gChrome" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbfcfd"/><stop offset=".5" stop-color="#b9c0c7"/><stop offset=".55" stop-color="#8e969e"/><stop offset="1" stop-color="#dfe3e7"/></linearGradient>
+  <linearGradient id="gSteelV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6eaee"/><stop offset="1" stop-color="#9aa2aa"/></linearGradient>
+  <linearGradient id="gSteelH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9aa2aa"/><stop offset=".5" stop-color="#eef1f3"/><stop offset="1" stop-color="#9aa2aa"/></linearGradient>
+  <linearGradient id="gGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5a6a"/><stop offset=".45" stop-color="#1f2933"/><stop offset=".5" stop-color="#5d6d7c"/><stop offset=".56" stop-color="#232d37"/><stop offset="1" stop-color="#151b21"/></linearGradient>
+  <linearGradient id="gAC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9ced3"/></linearGradient>
+  <linearGradient id="gFrame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3f45"/><stop offset="1" stop-color="#15181b"/></linearGradient>
+  <radialGradient id="gTire" cx=".5" cy=".5" r=".5"><stop offset=".55" stop-color="#2b2d30"/><stop offset=".9" stop-color="#151617"/><stop offset="1" stop-color="#0a0a0a"/></radialGradient>
+  <radialGradient id="gRim" cx=".42" cy=".38" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#cfd5db"/><stop offset="1" stop-color="#7f8891"/></radialGradient>
+  <radialGradient id="gCap" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#8a939b"/></radialGradient>
+  <radialGradient id="gWell" cx=".5" cy=".2" r=".9"><stop offset="0" stop-color="#3a3d41"/><stop offset="1" stop-color="#0d0e10"/></radialGradient>
+  <linearGradient id="gSofa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7b8794"/><stop offset="1" stop-color="#56616c"/></linearGradient>
+  <linearGradient id="gSink" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1f4f6"/><stop offset="1" stop-color="#9ea7af"/></linearGradient>
+
+  <pattern id="pCoin" width="9" height="9" patternUnits="userSpaceOnUse">
+    <rect width="9" height="9" fill="#17181a"/><circle cx="4.5" cy="4.5" r="2.4" fill="#2a2c2f"/>
+    <path d="M2.6 3.6 A2.4 2.4 0 0 1 5.4 2.3" stroke="#4a4d52" stroke-width=".7" fill="none"/></pattern>
+  <pattern id="pTread" width="16" height="16" patternUnits="userSpaceOnUse">
+    <rect width="16" height="16" fill="#c4c9cf"/>
+    <g fill="#eef1f3" stroke="#7f878f" stroke-width=".6">
+      <rect x="1.2" y="3.3" width="6.2" height="1.6" rx=".8" transform="rotate(45 4.3 4.1)"/>
+      <rect x="9.2" y="11.3" width="6.2" height="1.6" rx=".8" transform="rotate(-45 12.3 12.1)"/>
+      <rect x="9.2" y="3.3" width="6.2" height="1.6" rx=".8" transform="rotate(-45 12.3 4.1)"/>
+      <rect x="1.2" y="11.3" width="6.2" height="1.6" rx=".8" transform="rotate(45 4.3 12.1)"/></g></pattern>
+  <pattern id="pPlank" width="96" height="16" patternUnits="userSpaceOnUse">
+    <rect width="96" height="16" fill="#cdb48e"/><rect y="8" width="96" height="8" fill="#c4a982"/>
+    <path d="M0 8H96M0 0H96M40 0V8M84 8V16M18 8V16" stroke="#9c8462" stroke-width=".7"/></pattern>
+  <pattern id="pTile" width="10" height="10" patternUnits="userSpaceOnUse">
+    <rect width="10" height="10" fill="#e9edf0"/><path d="M10 0H0V10" stroke="#c6cdd3" stroke-width=".8" fill="none"/></pattern>
+
+  <filter id="fBrushed" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.003 0.85" numOctaves="2" seed="4"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.6 0 0 0 -0.62"/>
+    <feComposite in2="SourceGraphic" operator="in"/></filter>
+  <filter id="fWood" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.32" numOctaves="3" seed="11"/>
+    <feColorMatrix type="matrix" values="0.42 0 0 0 0.38  0.30 0 0 0 0.20  0.18 0 0 0 0.07  0 0 0 0 1"/>
+    <feComposite in2="SourceGraphic" operator="in"/></filter>
+  <filter id="fWoodV" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.32 0.012" numOctaves="3" seed="5"/>
+    <feColorMatrix type="matrix" values="0.42 0 0 0 0.38  0.30 0 0 0 0.20  0.18 0 0 0 0.07  0 0 0 0 1"/>
+    <feComposite in2="SourceGraphic" operator="in"/></filter>
+  <filter id="fPly" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.01 0.18" numOctaves="3" seed="2"/>
+    <feColorMatrix type="matrix" values="0.25 0 0 0 0.68  0.22 0 0 0 0.52  0.16 0 0 0 0.33  0 0 0 0 1"/>
+    <feComposite in2="SourceGraphic" operator="in"/></filter>
+  <filter id="fMarble" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" seed="9"/>
+    <feColorMatrix type="matrix" values="0.9 0 0 0 -0.2  0.9 0 0 0 -0.2  0.9 0 0 0 -0.18  0 0 0 0 1"/>
+    <feComposite in2="SourceGraphic" operator="in"/></filter>
+  <filter id="fShadow" x="-20%" y="-200%" width="140%" height="500%"><feGaussianBlur stdDeviation="6"/></filter>
+  <filter id="fDrop" x="-5%" y="-10%" width="110%" height="130%"><feGaussianBlur in="SourceAlpha" stdDeviation="4"/><feOffset dy="4"/><feComponentTransfer><feFuncA type="linear" slope=".35"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="fGlow" x="-100%" y="-300%" width="300%" height="700%"><feGaussianBlur stdDeviation="2.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="gBeam" cx=".5" cy="0" r="1"><stop offset="0" stop-color="#fff6c8" stop-opacity=".75"/><stop offset="1" stop-color="#fff6c8" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gAlu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef1f4"/><stop offset=".5" stop-color="#c9cfd5"/><stop offset="1" stop-color="#a9b1b9"/></linearGradient>
+  <linearGradient id="gAluH" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3f5f7"/><stop offset="1" stop-color="#b8c0c7"/></linearGradient>
+  <linearGradient id="gInterior" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d7dce1"/><stop offset="1" stop-color="#eef1f4"/></linearGradient>
+  <linearGradient id="gSolar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d4f8f"/><stop offset=".5" stop-color="#16294d"/><stop offset="1" stop-color="#2a4a86"/></linearGradient>
+  <linearGradient id="gSlide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
+  </defs>`;
+}
+
+// ---------- drawing primitives ----------
+function dimH(x1, x2, y, text, T, ext){
+  const c = T.dim; let s = '';
+  s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${c}" stroke-width="1"/>`;
+  [x1,x2].forEach(x=>{
+    s += `<line x1="${x}" y1="${y-(ext||7)}" x2="${x}" y2="${y+5}" stroke="${c}" stroke-width=".8"/>`;
+    s += T.R ? `<path d="M${x} ${y} l${x===x1?7:-7} -3 v6 z" fill="${c}"/>` : `<line x1="${x-4}" y1="${y+4}" x2="${x+4}" y2="${y-4}" stroke="${c}" stroke-width="1.4"/>`;
+  });
+  const w = tw(text, 11, !T.R, 600) + 10;
+  s += `<rect x="${(x1+x2)/2-w/2}" y="${y-8}" width="${w}" height="16" fill="${T.R?'#ffffff':'#1b4a8a'}" ${T.R?'fill-opacity=".9"':''}/>`;
+  s += `<text x="${(x1+x2)/2}" y="${y+4}" text-anchor="middle" class="t" font-size="11" font-weight="600" fill="${c}">${esc(text)}</text>`;
+  return s;
+}
+function dimV(x, y1, y2, text, T){
+  const c = T.dim; let s = `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${c}"/>`;
+  [y1,y2].forEach(y=>{ s += `<line x1="${x-6}" y1="${y}" x2="${x+5}" y2="${y}" stroke="${c}" stroke-width=".8"/>`;
+    s += T.R ? `<path d="M${x} ${y} l-3 ${y===y1?7:-7} h6 z" fill="${c}"/>` : `<line x1="${x-4}" y1="${y+4}" x2="${x+4}" y2="${y-4}" stroke="${c}" stroke-width="1.4"/>`; });
+  const m = (y1+y2)/2, w = tw(text, 11, !T.R, 600)+10;
+  s += `<g transform="rotate(-90 ${x} ${m})"><rect x="${x-w/2}" y="${m-8}" width="${w}" height="16" fill="${T.R?'#ffffff':'#1b4a8a'}" ${T.R?'fill-opacity=".9"':''}/>
+        <text x="${x}" y="${m+4}" text-anchor="middle" class="t" font-size="11" font-weight="600" fill="${c}">${esc(text)}</text></g>`;
+  return s;
+}
+
+// ---------- callouts: greedy row assignment + overlap-free horizontal placement ----------
+function callouts(items, rowYs, T, minX, maxX){
+  const gap = 8, rows = rowYs.map(()=>[]);
+  items = items.map(i=>({ ...i, w: tw(i.text, 11, !T.R, 600) + 12 })).sort((a,b)=>a.ax-b.ax);
+  const place = (row, it) => { let cx = Math.min(Math.max(it.ax, minX + it.w/2), maxX - it.w/2);
+    for (const o of row) if (cx + it.w/2 + gap > o.cx - o.w/2 && cx - it.w/2 - gap < o.cx + o.w/2) cx = o.cx + o.w/2 + gap + it.w/2;
+    return cx; };
+  items.forEach(it => {
+    let best = null;
+    const above = it.pref != null ? rowYs[it.pref] < it.ay : true;
+    const same = rowYs.map((_,i)=>i).filter(i => (rowYs[i] < it.ay) === above);
+    const order = it.pref != null && same.includes(it.pref) ? [it.pref, ...same.filter(i=>i!==it.pref)] : (same.length ? same : rowYs.map((_,i)=>i));
+    for (const r of order) { const cx = place(rows[r], it); const cost = Math.abs(cx - it.ax) + (cx + it.w/2 > maxX ? 9999 : 0) + r*4;
+      if (!best || cost < best.cost) best = { r, cx, cost }; if (cost < 40) break; }
+    it.cx = Math.min(best.cx, maxX - it.w/2); rows[best.r].push(it); rows[best.r].sort((a,b)=>a.cx-b.cx); it.y = rowYs[best.r];
+  });
+  let lead = '', boxes = '';
+  items.forEach(o => { const y = o.y, ey = y > o.ay ? y-9 : y+9;
+    lead += `<polyline points="${f(o.ax)},${f(o.ay)} ${f(o.ax)},${f((o.ay+ey)/2)} ${f(o.cx)},${f(ey)}" fill="none" stroke="${T.lead}" stroke-width=".9" opacity=".9"/>
+             <circle cx="${f(o.ax)}" cy="${f(o.ay)}" r="2.4" fill="${T.R?'#e0572a':'#fff'}" stroke="${T.R?'#fff':'none'}"/>`;
+    boxes += `<rect x="${f(o.cx-o.w/2)}" y="${y-9}" width="${f(o.w)}" height="18" rx="${T.R?4:0}" fill="${T.box}" ${T.R?`stroke="${T.boxStroke}"`:'stroke="#9fd0ff" stroke-width=".8"'}/>
+             <text x="${f(o.cx)}" y="${y+4}" text-anchor="middle" class="t" font-size="11" font-weight="600" fill="${o.hl ? (T.R?'#a86b00':'#ffe08a') : T.txt}">${esc(o.text)}</text>`; });
+  return lead + boxes;
+}
+
+// ---------- symbol library (fixed px size, centred at x,y) — used by drawings and legend ----------
+function icon(type, x, y, T, o){
+  o = o || {}; const R = T.R, w = '#fff';
+  const g = (inner, glow) => `<g transform="translate(${f(x)} ${f(y)})" ${glow && R ? 'filter="url(#fGlow)"' : ''}>${inner}</g>`;
+  switch (type) {
+    case 'led': { const L = o.len || 22; return g(R ? `<rect x="${-L/2}" y="-3" width="${L}" height="6" rx="3" fill="#fffbe0" stroke="#e0c75a" stroke-width=".8"/>`
+                                  : `<rect x="${-L/2}" y="-3" width="${L}" height="6" fill="#1b4a8a" stroke="${w}" stroke-width="1"/><line x1="${-L/2+3}" y1="0" x2="${L/2-3}" y2="0" stroke="${w}" stroke-width=".8"/>`, true); }
+    case 'scene': return g(R ? `<rect x="-6" y="-4" width="12" height="8" rx="1.5" fill="#2b2f33"/><rect x="-4.5" y="-2.5" width="9" height="5" rx="1" fill="#fff6c8"/>`
+                             : `<circle r="4.5" fill="#1b4a8a" stroke="${w}"/><path d="M0 -8V-6M0 6V8M-8 0H-6M6 0H8M-5.5 -5.5L-4.2 -4.2M5.5 5.5L4.2 4.2M-5.5 5.5L-4.2 4.2M5.5 -5.5L4.2 -4.2" stroke="${w}"/>`, true);
+    case 'porch': return g(R ? `<circle r="4.5" fill="#ffe7a3" stroke="#8a6d1f"/>` : `<circle r="4.5" fill="#1b4a8a" stroke="${w}"/><path d="M-3.2 -3.2L3.2 3.2M-3.2 3.2L3.2 -3.2" stroke="${w}"/>`, true);
+    case 'dock':  return g(R ? `<path d="M-5 4L0 -5L5 4Z" fill="#ffb21e" stroke="#7a5200" stroke-width=".7"/>` : `<path d="M-5 4L0 -5L5 4Z" fill="#1b4a8a" stroke="${w}"/>`, true);
+    case 'load':  return g(R ? `<rect x="-5" y="-3" width="10" height="6" rx="1" fill="#ffffff" stroke="#59616a"/>` : `<rect x="-5" y="-3" width="10" height="6" fill="#1b4a8a" stroke="${w}"/><path d="M-3 5V8M0 5V9M3 5V8" stroke="${w}"/>`, true);
+    case 'spoiler': return g(R ? `<path d="M-10 3L-6 -4H10V3Z" fill="#30363c"/><rect x="-5" y="1" width="14" height="2" fill="#fff6c8"/>` : `<path d="M-10 3L-6 -4H10V3Z" fill="#1b4a8a" stroke="${w}"/><line x1="-5" y1="2" x2="9" y2="2" stroke="${w}" stroke-dasharray="2 1"/>`, false);
+    case 'underCab': return g(R ? `<rect x="-11" y="-6" width="22" height="5" fill="url(#gAlu)" stroke="#7d868f" stroke-width=".6"/><line x1="-10" y1="1" x2="10" y2="1" stroke="#fff3b0" stroke-width="2.4" filter="url(#fGlow)"/>`
+                                : `<rect x="-11" y="-6" width="22" height="5" fill="none" stroke="${w}" stroke-dasharray="3 2"/><line x1="-10" y1="1.5" x2="10" y2="1.5" stroke="#ffe08a" stroke-width="1.4" stroke-dasharray="1 2"/>`, false);
+    case 'accent': return g(R ? `<line x1="-11" y1="0" x2="11" y2="0" stroke="#2f8be0" stroke-width="2.4" filter="url(#fGlow)"/>` : `<line x1="-11" y1="0" x2="11" y2="0" stroke="#9fd3ff" stroke-width="1.6" stroke-dasharray="4 2 1 2"/>`, false);
+    case 'solar': return g(R ? `<rect x="-11" y="-7" width="22" height="14" fill="url(#gSolar)" stroke="#9aa2aa" stroke-width="1"/><path d="M-11 0H11M-3.7 -7V7M3.7 -7V7" stroke="#6d8fc9" stroke-width=".6"/>`
+                             : `<rect x="-11" y="-7" width="22" height="14" fill="#1b4a8a" stroke="${w}"/><path d="M-11 0H11M-3.7 -7V7M3.7 -7V7" stroke="${w}" stroke-width=".6"/>`, false);
+    case 'panel': return g(R ? `<rect x="-6" y="-8" width="12" height="16" rx="1" fill="#d5dade" stroke="#4b5258"/><path d="M-3 -4H3M-3 -1H3M-3 2H3" stroke="#4b5258"/><text y="7" text-anchor="middle" font-size="5" font-weight="700" fill="#1d2733">${o.amps||''}</text>`
+                             : `<rect x="-6" y="-8" width="12" height="16" fill="#1b4a8a" stroke="${w}"/><path d="M-6 -8L6 8" stroke="${w}"/><text y="-1" x="2" font-size="5" fill="${w}">${o.amps||''}</text>`, false);
+    case 'ats': return g(R ? `<rect x="-7" y="-7" width="14" height="14" rx="1.5" fill="#f2c94c" stroke="#7a5d00"/><path d="M-4 -2H4L2 -4M4 2H-4L-2 4" fill="none" stroke="#3b2f00" stroke-width="1.1"/>`
+                           : `<rect x="-7" y="-7" width="14" height="14" fill="#1b4a8a" stroke="${w}"/><path d="M-4 -2H4L2 -4M4 2H-4L-2 4" fill="none" stroke="${w}" stroke-width="1"/>`, false);
+    case 'batt': { const li = o.li; return g(R ? `<rect x="-8" y="-5" width="16" height="10" rx="1.5" fill="${li?'#2e7d32':'#3b4249'}" stroke="#1b1f23"/><rect x="-5" y="-7" width="3" height="2" fill="#1b1f23"/><rect x="2" y="-7" width="3" height="2" fill="#1b1f23"/><text y="3" text-anchor="middle" font-size="6.5" font-weight="800" fill="#fff">${li?'Li':'12V'}</text>`
+                           : `<rect x="-8" y="-5" width="16" height="10" fill="#1b4a8a" stroke="${w}"/><path d="M-5 -7V-5M4 -7V-5" stroke="${w}"/><text y="3" text-anchor="middle" font-size="6.5" font-weight="700" fill="${w}">${li?'Li':'12V'}</text>`, false); }
+    case 'gen': return g(R ? `<rect x="-8" y="-6" width="16" height="12" rx="2" fill="#c9ced3" stroke="#59616a"/><text y="3" text-anchor="middle" font-size="7" font-weight="800" fill="#1d2733">G</text>` : `<rect x="-8" y="-6" width="16" height="12" fill="url(#bpCross)" stroke="${w}"/><text y="3" text-anchor="middle" font-size="7" font-weight="700" fill="${w}">G</text>`, false);
+    case 'ac': return g(`<rect x="-8" y="-6" width="16" height="12" fill="none" stroke="${R?'#1d5fb4':'#9fd3ff'}" stroke-dasharray="3 2"/><path d="M-8 -6L8 6M8 -6L-8 6" stroke="${R?'#1d5fb4':'#9fd3ff'}" stroke-width=".6"/>`, false);
+    case 'base': return g(R ? `<rect x="-11" y="-6" width="22" height="12" fill="url(#gAluH)" stroke="#59616a"/><line x1="-11" y1="-3.5" x2="11" y2="-3.5" stroke="#59616a" stroke-width=".6"/>` : `<rect x="-11" y="-6" width="22" height="12" fill="url(#bpCross)" stroke="${w}"/>`, false);
+    case 'oh': return g(`<rect x="-11" y="-5" width="22" height="10" fill="none" stroke="${R?'#3d4a57':'#fff'}" stroke-width="1.1" stroke-dasharray="4 2.5"/>`, false);
+    case 'closet': return g(R ? `<rect x="-8" y="-6" width="16" height="12" fill="url(#gAluH)" stroke="#3d4a57" stroke-width="1.2"/><path d="M-8 -6L8 6M8 -6L-8 6" stroke="#59616a" stroke-width=".7"/>` : `<rect x="-8" y="-6" width="16" height="12" fill="#1b4a8a" stroke="${w}" stroke-width="1.2"/><path d="M-8 -6L8 6M8 -6L-8 6" stroke="${w}" stroke-width=".7"/>`, false);
+    case 'chest': return g(R ? `<rect x="-8" y="-6" width="16" height="12" fill="#c62828" stroke="#5b1010"/><path d="M-8 -2H8M-8 1H8M-8 4H8" stroke="#ffd0d0" stroke-width=".7"/>` : `<rect x="-8" y="-6" width="16" height="12" fill="#1b4a8a" stroke="${w}"/><path d="M-8 -2H8M-8 1H8M-8 4H8" stroke="${w}" stroke-width=".7"/>`, false);
+  }
+  return '';
+}
+
+// =====================================================================
+// SIDE ELEVATION. curb=true: curbside (front at RIGHT); false: roadside (front at LEFT)
+// =====================================================================
+function lqPlanParts(lq, slide){   // LQ interior layout per Vintage "12 LQ Sofa" pattern, scaled for other sizes
+  const P = { curb:[], road:[] };
+  const bathLen = lq >= 11 ? 5.6 : 4.6, bath0 = lq - bathLen;
+  // curbside: sofa (or slide), closet, [bunks/storage], entry door, OH cab strip at rear
+  let r = 0.2;
+  if (lq >= 11) { P.curb.push({ k:'sofa', r0: slide ? 0.5 : 0.2, r1: slide ? 6.5 : 6.2 }); r = 6.3;
+                  P.curb.push({ k:'closet', r0:6.3, r1:7.8 }); r = 7.8; }
+  else { P.curb.push({ k:'closet', r0:0.2, r1:1.7 }); r = 1.7; }
+  const d1 = lq - (lq >= 11 ? 1.6 : 1.2), d0 = d1 - 2.4;
+  if (d0 - r >= 1.6) P.curb.push({ k: lq >= 16 ? 'bunks' : 'storage', r0:r+0.1, r1:d0-0.1 });
+  P.door = [d0, d1];
+  P.curb.push({ k:'ohstrip', r0:lq-1.05, r1:lq-0.15 });
+  // roadside: galley (sink + stove, OH cab w/ micro), fridge, pantry, bath at rear roadside
+  const gEnd = Math.min(4.0, bath0 - 0.1);
+  P.road.push({ k:'galley', r0:0.2, r1:gEnd });
+  if (bath0 - gEnd >= 2.3) { P.road.push({ k:'fridge', r0:gEnd+0.1, r1:gEnd+2.3 });
+    if (bath0 - (gEnd+2.3) >= 1.3) P.road.push({ k:'pantry', r0:gEnd+2.4, r1:bath0-0.1 }); }
+  P.bath = [bath0, lq];
+  return P;
+}
+function drawSide(curb){
+  const m = M, g = m.g, T = theme(), R = T.R;
+  const {S, X0, xb, xe, c0, hR} = g, LQ = hasLQ(), lq = g.lqDraw;
+  const GY = f(70 + (hR + 1.3) * S), H = f(GY + 142);
+  const X = u => f(curb ? 1200 - (X0 + u*S) : X0 + u*S), Y = h => f(GY - h*S), D = n => f(n*S);
+  const box = (u1,u2,h1,h2,a) => `<rect x="${f(Math.min(X(u1),X(u2)))}" y="${Y(h2)}" width="${D(Math.abs(u2-u1))}" height="${D(h2-h1)}" ${a||''}/>`;
+  const ln = (u1,h1,u2,h2,a) => `<line x1="${X(u1)}" y1="${Y(h1)}" x2="${X(u2)}" y2="${Y(h2)}" ${a||''}/>`;
+  const st = R ? '#1d242b' : '#fff', sw = R ? 1 : 1.5, fill2 = R ? 'url(#gFrame)' : 'none';
+  const items = []; const co = (u, h, text, pref, hl) => items.push({ ax:X(u), ay:Y(h), text, pref, hl });
+  const P = LQ ? lqPlanParts(lq, m.slide) : null;
+  let s = '';
+  // background
+  s += R ? `<rect width="1200" height="${H}" fill="url(#gSky)"/><rect y="${GY}" width="1200" height="${H-GY}" fill="url(#gGround)"/>
+            <line x1="0" y1="${GY}" x2="1200" y2="${GY}" stroke="#6f767d" stroke-width="1.5"/>
+            <ellipse cx="${f((+X(xb) + +X(xe))/2)}" cy="${GY+2}" rx="${D((xe-xb)/2+1.5)}" ry="7" fill="#000" opacity=".45" filter="url(#fShadow)"/>`
+         : `<rect width="1200" height="${H}" fill="#1b4a8a"/><rect width="1200" height="${H}" fill="url(#pGrid5)"/>
+            <line x1="20" y1="${GY}" x2="1180" y2="${GY}" stroke="#fff" stroke-width="1.2"/>`;
+  // body outline
+  const T0 = hR;
+  let body = g.GN
+    ? `M${X(xb)} ${Y(1.6)} L${X(xb)} ${Y(5)} L${X(1.2)} ${Y(5)} Q${X(0)} ${Y(5)} ${X(0)} ${Y(6.2)} L${X(0)} ${Y(T0-1.4)} Q${X(0)} ${Y(T0)} ${X(1.4)} ${Y(T0)} L${X(xe-.3)} ${Y(T0)} Q${X(xe)} ${Y(T0)} ${X(xe)} ${Y(T0-.3)} L${X(xe)} ${Y(1.6)} Z`
+    : `M${X(xb)} ${Y(1.6)} L${X(xb)} ${Y(T0-1.1)} Q${X(xb)} ${Y(T0)} ${X(xb+1.1)} ${Y(T0)} L${X(xe-.3)} ${Y(T0)} Q${X(xe)} ${Y(T0)} ${X(xe)} ${Y(T0-.3)} L${X(xe)} ${Y(1.6)} Z`;
+  // jacks / coupler / tongue
+  if (g.GN) { const jx = xb - .9;
+    s += box(1.6, 2.3, 3.9, 5, `fill="${fill2}" stroke="${st}" stroke-width="${sw}"`) + box(1.45, 2.45, 3.65, 3.9, `fill="${R?'#c9ced3':'none'}" stroke="${st}" stroke-width="${sw}"`);
+    s += box(jx-.25, jx+.25, 1.4, 5, `fill="${fill2}" stroke="${st}" stroke-width="${sw}"`) + box(jx-.15, jx+.15, .25, 1.4, `fill="${R?'url(#gSteelH)':'none'}" stroke="${st}" stroke-width="${sw}"`) + box(jx-.6, jx+.6, 0, .25, `fill="${fill2}" stroke="${st}" stroke-width="${sw}"`);
+    s += box(.8, xb, 4.7, 5, `fill="${fill2}" stroke="${st}" stroke-width="${sw*.8}"`);
+    co(1.95, 3.65, cfg.hitch === '5th Wheel' ? '5th-wheel pin box' : 'Gooseneck coupler', 4);
+    co(jx, .1, LQ ? 'Hydraulic jack (std w/ GN LQ)' : 'Jack', 5);
+  } else {
+    s += `<path d="M${X(xb)} ${Y(1.25)} L${X(.7)} ${Y(1.55)} L${X(.7)} ${Y(1.9)} L${X(xb)} ${Y(1.6)} Z" fill="${fill2}" stroke="${st}" stroke-width="${sw}"/>`;
+    s += box(0, .9, 1.55, 2.05, `rx="3" fill="${R?'url(#gSteelV)':'none'}" stroke="${st}" stroke-width="${sw}"`) + box(2.1, 2.55, 1.3, 3.4, `fill="${fill2}" stroke="${st}" stroke-width="${sw}"`) + box(1.9, 2.75, 0, .2, `fill="${fill2}" stroke="${st}"`);
+    co(.45, 1.55, 'Bumper-pull coupler', 4);
+  }
+  const w0 = g.wheels[0], wN = g.wheels[g.wheels.length-1];
+  if (R) s += box(w0-1.55, wN+1.55, 1.2, 2.8, 'fill="url(#gWell)"');
+  // shell
+  const cp = curb ? 'cpC' : 'cpR';
+  s += `<clipPath id="${cp}"><path d="${body}"/></clipPath>`;
+  if (R) {
+    const light = hex2rgb(COLORS[clean(cfg.color)]||'#ccc').reduce((a,b)=>a+b,0) > 500;
+    s += `<path d="${body}" fill="url(#gBody)"/><g clip-path="url(#${cp})"><rect width="1200" height="${GY}" fill="#fff" filter="url(#fBrushed)" opacity="${light?.55:.16}"/>`;
+    for (let u = xb + 2; u < xe - .5; u += 2) { s += ln(u, T0-.25, u, 2.2, `stroke="#000" stroke-opacity="${cfg.fasteners==='Screws'?.16:.07}"`);
+      if (cfg.fasteners === 'Screws') for (let h = 2.5; h < T0-.4; h += .7) s += `<circle cx="${X(u)}" cy="${Y(h)}" r="1.1" fill="#2a2f35" opacity=".65"/>`; }
+    s += box(0, xe, T0-.32, T0, 'fill="url(#gChrome)" opacity=".9"') + box(xb, xe, 1.6, 2.2, 'fill="url(#pTread)"');
+    if (g.GN) s += box(0, xb, 6.4, 7.8, 'fill="url(#pTread)" opacity=".95"');
+    s += `</g><path d="${body}" fill="none" stroke="#3b434b" stroke-width="1.2"/>`;
+  } else {
+    s += `<path d="${body}" fill="#fff" fill-opacity=".05" stroke="#fff" stroke-width="2"/>` + ln(xb, 2.2, xe, 2.2, 'stroke="#fff" stroke-opacity=".6"');
+    if (cfg.fasteners === 'Screws') for (let u = xb + 2; u < xe - .5; u += 2) s += ln(u, T0-.25, u, 2.2, 'stroke="#fff" stroke-opacity=".35" stroke-dasharray="1 4"');
+    s += `<g stroke="#9fd3ff" stroke-dasharray="6 4" fill="none">${ln(xb, 2.0, xe, 2.0)}${LQ ? ln(c0, 2, c0, T0-.1) : ''}</g>`;
+    if (LQ) s += `<text x="${X(xb+lq/2)}" y="${Y(4.3)}" text-anchor="middle" class="t" font-size="12" font-weight="700" fill="#9fd3ff">LQ ${lq}'</text>`;
+  }
+  s += box(xb, xe, 1.18, 1.6, `fill="${R?'url(#gFrame)':'none'}" stroke="${st}" stroke-width="${sw}"`);
+  // ---- interior hint: cabinets + ceiling LEDs + accent (roadside wall; seen through cutaway / hidden lines)
+  const cabs = m.cabs, cabU = [...cabs.base, ...cabs.oh];
+  const ledU = ledPositions(), lt = m.lights;
+  const cutA = cabU.length ? Math.min(...cabU.map(p=>p.u0)) - .5 : null, cutB = cabU.length ? Math.max(...cabU.map(p=>p.u1)) + .5 : null;
+  const interior = () => { let o = '';
+    const far = curb; // on the curbside elevation the cabinets are on the far wall
+    cabs.oh.forEach(p => { o += box(p.u0, p.u1, 7.3, 9.0, R ? `fill="url(#gAlu)" stroke="#59616a" stroke-width=".8"` : `fill="none" stroke="#ffe08a" stroke-width="1.1" stroke-dasharray="6 3"`);
+      if (R) for (let u = p.u0 + 2; u < p.u1 - .3; u += 2) o += ln(u, 7.3, u, 9.0, 'stroke="#59616a" stroke-width=".6"');
+      if (lt.underCab.on) o += ln(p.u0+.1, 7.22, p.u1-.1, 7.22, R ? 'stroke="#fff3b0" stroke-width="3" filter="url(#fGlow)"' : 'stroke="#ffe08a" stroke-width="1.5" stroke-dasharray="1 2"'); });
+    cabs.base.forEach(p => { const top = p.kind === 'closet' ? 9.0 : 5.0;
+      const fillB = p.kind === 'chest' ? (R ? '#c62828' : 'none') : (R ? 'url(#gAlu)' : 'none');
+      o += box(p.u0, p.u1, 2.05, top, R ? `fill="${fillB}" stroke="#4b5258" stroke-width=".9"` : `fill="none" stroke="#ffe08a" stroke-width="1.2" ${p.kind==='closet'?'':'stroke-dasharray="8 3"'}`);
+      if (p.kind !== 'closet' && p.kind !== 'chest' && R) o += box(p.u0, p.u1, 4.85, 5.05, 'fill="#59616a"');
+      if (p.kind === 'chest') for (let h = 2.5; h < 4.9; h += .4) o += ln(p.u0+.1, h, p.u1-.1, h, `stroke="${R?'#ffd0d0':'#ffe08a'}" stroke-width=".7"`);
+      if (p.kind === 'base' && R) for (let u = p.u0 + 2; u < p.u1 - .3; u += 2) o += ln(u, 2.1, u, 4.85, 'stroke="#59616a" stroke-width=".6"');
+      if (p.kind === 'closet') o += ln((p.u0+p.u1)/2, 2.1, (p.u0+p.u1)/2, 8.95, `stroke="${R?'#4b5258':'#ffe08a'}" stroke-width=".7"`);
+      if (p.kind === 'kit') o += `<text x="${X((p.u0+p.u1)/2)}" y="${Y(3.3)}" text-anchor="middle" class="t" font-size="${Math.min(10, S*.6)}" font-weight="700" fill="${R?'#1d2733':'#ffe08a'}">${({Sink:'SINK',Fridge:'FRG',Micro:'MW'})[p.name]}</text>`; });
+    if (lt.accent.on) o += ln(cutA ?? c0, 2.12, cutB ?? xe, 2.12, R ? 'stroke="#5ab4ff" stroke-width="2.5" filter="url(#fGlow)"' : 'stroke="#9fd3ff" stroke-width="1.4" stroke-dasharray="4 2 1 2"');
+    return o; };
+  if (R && cabU.length) {
+    // cutaway window with torn edges
+    const a = Math.max(cutA, c0+.3), b = Math.min(cutB, xe-.5), top = T0 - .35, bot = 2.0;
+    let pts = [], n = Math.max(4, Math.round((top-bot)/0.8));
+    for (let i=0;i<=n;i++) pts.push([b + (i%2 ? .25 : -.05), top - (top-bot)*i/n]);
+    for (let i=0;i<=n;i++) pts.push([a + (i%2 ? -.25 : .05), bot + (top-bot)*i/n]);
+    const path = 'M' + pts.map(([u,h])=>`${X(u)} ${Y(h)}`).join(' L') + ' Z';
+    s += `<clipPath id="cw${cp}"><path d="${path}"/></clipPath><path d="${path}" fill="url(#gInterior)"/>
+          <g clip-path="url(#cw${cp})">${box(a-.5, b+.5, 1.9, 2.1, 'fill="#4a4f55"')}${interior()}
+          ${ledU.map(u=>box(u-.8, u+.8, top-.18, top, 'fill="#fffbe0" stroke="#e0c75a" stroke-width=".6" filter="url(#fGlow)"')).join('')}</g>
+          <path d="${path}" fill="none" stroke="#2a3037" stroke-width="1.6"/>`;
+    co((a+b)/2, top, `Cutaway: ${curb?'far (roadside) wall':'roadside wall'} — ${cfg.cab} cabinets`, 0, true);
+  } else if (!R) {
+    s += interior();
+    s += ledU.map(u=>box(u-.8, u+.8, T0-.42, T0-.24, 'fill="none" stroke="#ffe08a" stroke-width="1" stroke-dasharray="3 2"')).join('');
+    if (cabU.length) co((cutA+cutB)/2, 9.0, `Hidden: ${cfg.cab} cabinets (${curb?'far':'this'} wall)`, 0, true);
+  }
+  // ---- windows / doors per side
+  const win = (u1,u2,h1,h2) => R
+    ? box(u1,u2,h1,h2,'rx="4" fill="url(#gGlass)" stroke="#111" stroke-width="2.5"') + ln((u1+u2)/2, h1, (u1+u2)/2, h2, 'stroke="#111" stroke-width="1.5"')
+    : box(u1,u2,h1,h2,'fill="none" stroke="#fff" stroke-width="1.2"') + ln((u1+u2)/2, h1, (u1+u2)/2, h2, 'stroke="#fff" stroke-width=".6"');
+  const door = (u1,u2,h1,h2,winOn) => box(u1,u2,h1,h2, `rx="2" fill="${R?'url(#gBody)':'none'}" stroke="${R?'#2a3037':'#fff'}" stroke-width="${R?1.6:1.4}"`)
+    + box(curb ? u1+.3 : u2-.52, curb ? u1+.52 : u2-.3, h1+(h2-h1)*.48, h1+(h2-h1)*.58, `rx="1.5" fill="${R?'url(#gSteelH)':'none'}" stroke="${st}" stroke-width=".8"`)
+    + (winOn ? win(u1+.5, u2-.5, h2-2.2, h2-.6) : '');
+  if (g.GN) { s += win(2.4, 5.6, 7.3, T0-.9); co(4, T0, LQ ? 'Gooseneck bedroom (queen bed + closet)' : 'Gooseneck upper deck', 2); }
+  if (LQ) {
+    if (curb) { // sofa window / slide-out, LQ entry door
+      if (m.slide) { const r0 = xb+.3, r1 = xb+6.7;
+        s += box(r0, r1, 2.6, T0-1.0, R ? 'fill="url(#gBody)" stroke="#2a3037" stroke-width="2"' : 'fill="none" stroke="#ffe08a" stroke-width="2"');
+        if (R) s += box(r0, r1, 2.6, T0-1.0, 'fill="url(#gSlide)"') + box(r0-.12, r1+.12, T0-1.15, T0-.95, 'fill="url(#gChrome)"');
+        s += win(r0+1.4, r1-1.4, 5.6, T0-1.8);
+        co((r0+r1)/2, 2.6, `Slide-out room (${cfg.slideContent.toLowerCase()}) · +${RULES.slideExtraIn}" height`, 3, true);
+      } else s += win(xb+1.5, xb+4.5, 6.0, 8.3);
+      const [d0, d1] = P.door; s += door(xb+d0, xb+d1, 2.3, 8.6, true);
+      co(xb+(d0+d1)/2, 2.3, 'LQ entry door', 4);
+    } else { s += win(xb+.8, xb+3.4, 6.2, 8.3); }
+  } else if (curb) { const d0 = c0 + 2.6; s += door(d0, d0+2.6, 2.3, 8.4, false); co(d0+1.3, 2.3, 'Side door (curbside)', 4); }
+  // generator compartment door (roadside, front of cargo)
+  if (!curb && cfg.genComp === 'Yes') { const a = c0+.3, b = c0+2.3;
+    s += box(a, b, 2.4, 4.6, `rx="2" fill="${R?'url(#gSteelV)':'none'}" stroke="${st}" stroke-width="${sw}"`);
+    for (let h = 2.85; h < 4.4; h += .38) s += ln(a+.3, h, b-.3, h, `stroke="${R?'#59616a':'#fff'}" stroke-width="${R?1.6:.7}"`);
+    co((a+b)/2, 2.4, `Generator compartment door${genKW()?` (${genKW()} kW Onan)`:''}`, 4); }
+  if (!curb && cfg.addl.startsWith('Escape Door')) { s += door(g.wc-1.3, g.wc+1.3, 3.1, T0-.7, false); co(g.wc, 3.1, 'Escape door over wheel well', 5); }
+  // awning (curbside) + LED strip
+  if (curb && cfg.addl === 'Awning') { const a0 = m.slide ? xb + 7.0 : xb + .6, a1 = Math.min(a0 + 18, xe - 2.5);
+    s += box(a0, a1, T0-.75, T0-.4, R ? 'rx="3" fill="url(#gChrome)" stroke="#59616a"' : 'fill="none" stroke="#fff" stroke-width="1.2"');
+    [a0+.2, a1-.2].forEach(u => s += ln(u, T0-.75, u, 2.4, `stroke="${R?'#8d959d':'#fff'}" stroke-width="${R?2:1}" ${R?'':'stroke-dasharray="4 3"'}`));
+    if (m.lights.awningLed.on) s += ln(a0+.3, T0-.82, a1-.3, T0-.82, R ? 'stroke="#fff3b0" stroke-width="2.6" filter="url(#fGlow)"' : 'stroke="#ffe08a" stroke-width="1.6" stroke-dasharray="1 2"');
+    co((a0+a1)/2, T0-.4, `Awning${m.lights.awningLed.on?' + LED strip':''} (${f(a1-a0)}')`, 1, m.lights.awningLed.on); }
+  // marker lights
+  const ml = (u, col) => box(u, u+.4, T0-.45, T0-.23, `rx="1.5" fill="${R?col:'none'}" stroke="${R?'#5a4a20':'#fff'}" stroke-width=".7"`);
+  s += ml(g.GN?1.4:xb+.3, '#ffb21e') + ml((xb+xe)/2, '#ffb21e') + ml(xe-.8, '#e0251d');
+  // exterior lights
+  const L = m.lights;
+  const scene = curb ? L.sceneCurb.on : L.sceneRoad.on;
+  if (scene) { const us = [c0 + 1.6, xe - 3.2];
+    us.forEach(u => { if (R) s += `<path d="M${X(u)} ${Y(T0-1.3)} L${X(u-1.6)} ${Y(2.2)} L${X(u+1.6)} ${Y(2.2)} Z" fill="url(#gBeam)" opacity=".55"/>`; s += icon('scene', X(u), Y(T0-1.3), T); });
+    co(us[0], T0-1.0, `Scene lights ×2 (${curb?'curbside':'roadside'})`, 1, true); }
+  if (curb && L.porch.on) { const pu = LQ ? xb + (P.door[0]+P.door[1])/2 : c0 + 3.9; s += icon('porch', X(pu), Y(8.95), T); co(pu, 9.1, 'Porch light', 0, true); }
+  if (L.docking.on) { s += icon('dock', X(xe-.7), Y(2.6), T); co(xe-.7, 2.4, 'Docking light', 5, true); }
+  if (L.loadLights.on) { s += icon('load', X(xe-.45), Y(T0-.55), T); }
+  if (L.spoiler.on) { s += `<path d="M${X(xe-2.4)} ${Y(T0)} L${X(xe-1.8)} ${Y(T0+.5)} L${X(xe+.15)} ${Y(T0+.5)} L${X(xe+.15)} ${Y(T0+.15)} Z" fill="${R?'#30363c':'none'}" stroke="${st}" stroke-width="${sw}"/>`
+         + (R ? ln(xe-1.6, T0+.18, xe+.05, T0+.18, 'stroke="#fff6c8" stroke-width="2.4" filter="url(#fGlow)"') : ln(xe-1.6, T0+.2, xe, T0+.2, 'stroke="#ffe08a" stroke-dasharray="2 1"'));
+       co(xe-1, T0+.5, 'Spoiler light', 0, true); }
+  if (L.loadLights.on || L.spoiler.on) co(xe-.45, T0-.6, L.loadLights.on ? 'Rear load lights' : '', 2, true);
+  // rear ramp door edge + hinge
+  s += box(xe-.32, xe, 1.6, T0-.3, `fill="${R?'url(#gSteelH)':'none'}" stroke="${st}" stroke-width="${sw}"`) + `<circle cx="${X(xe-.16)}" cy="${Y(1.85)}" r="${D(.22)}" fill="${R?'#30363c':'none'}" stroke="${st}"/>`;
+  // roof: A/C units, solar, vent
+  const acUnit = (cu, lab) => { s += `<path d="M${X(cu-1.6)} ${Y(T0)} L${X(cu-1.3)} ${Y(T0+.85)} L${X(cu+1.3)} ${Y(T0+.85)} L${X(cu+1.6)} ${Y(T0)} Z" fill="${R?'url(#gAC)':'none'}" stroke="${st}" stroke-width="${sw}"/>`; co(cu, T0+.85, lab, 1); };
+  if (LQ && cfg.acLQ === 'Yes') acUnit(xb + 3.6, 'A/C — LQ');
+  if (cfg.acCargo === 'Yes') acUnit(c0 + g.cargo*.55, 'A/C — cargo');
+  else if (m.E.acWiring) { const cu = c0 + g.cargo*.55; s += box(cu-1.2, cu+1.2, T0, T0+.12, `fill="none" stroke="${R?'#59616a':'#9fd3ff'}" stroke-dasharray="3 2"`); co(cu, T0+.1, 'Roof braced & wired for A/C', 2); }
+  if (m.solarOn) { const su = c0 + 2.2; s += box(su, su+2.2, T0+.1, T0+.28, R ? 'fill="url(#gSolar)" stroke="#9aa2aa"' : 'fill="none" stroke="#ffe08a" stroke-width="1.4"') + ln(su+.3, T0, su+.3, T0+.1, `stroke="${st}"`) + ln(su+1.9, T0, su+1.9, T0+.1, `stroke="${st}"`);
+    co(su+1.1, T0+.28, '~30W trickle-charge solar', 0, true); }
+  s += `<path d="M${X(c0+g.cargo*.25)} ${Y(T0)} Q${X(c0+g.cargo*.25+.6)} ${Y(T0+.45)} ${X(c0+g.cargo*.25+1.2)} ${Y(T0)} Z" fill="${R?'url(#gAC)':'none'}" stroke="${st}" stroke-width="${sw}"/>`;
+  // fender + wheels
+  s += `<path d="M${X(w0-1.6)} ${Y(2.6)} L${X(w0-1.45)} ${Y(2.95)} L${X(wN+1.45)} ${Y(2.95)} L${X(wN+1.6)} ${Y(2.6)} Z" fill="${R?'url(#gChrome)':'none'}" stroke="${st}" stroke-width="${sw}"/>`;
+  g.wheels.forEach(u => { const cx = +X(u), cy = +Y(g.R), r = g.R*S;
+    if (R) { s += `<circle cx="${cx}" cy="${cy}" r="${f(r)}" fill="url(#gTire)"/><circle cx="${cx}" cy="${cy}" r="${f(r*.95)}" fill="none" stroke="#343638" stroke-width="2.2" stroke-dasharray="3 2.4"/><circle cx="${cx}" cy="${cy}" r="${f(r*.64)}" fill="url(#gRim)" stroke="#e9edf0" stroke-width="1.4"/>`;
+      for (let k=0;k<6;k++){ const a=k*Math.PI/3+.3, d=.27, r1=r*.24, r2=r*.53;
+        s += `<polygon points="${[[r1,a-d*1.3],[r2,a-d],[r2,a+d],[r1,a+d*1.3]].map(([rr,aa])=>`${f(cx+rr*Math.cos(aa))},${f(cy+rr*Math.sin(aa))}`).join(' ')}" fill="#2f3439" stroke="#8c949c" stroke-width=".6"/>`; }
+      s += `<circle cx="${cx}" cy="${cy}" r="${f(r*.18)}" fill="url(#gCap)" stroke="#7a838b" stroke-width=".6"/>`;
+    } else s += `<circle cx="${cx}" cy="${cy}" r="${f(r)}" fill="#1b4a8a" stroke="#fff" stroke-width="1.5"/><circle cx="${cx}" cy="${cy}" r="${f(r*.62)}" fill="none" stroke="#fff"/><circle cx="${cx}" cy="${cy}" r="${f(r*.17)}" fill="none" stroke="#fff"/><path d="M${f(cx-r*1.15)} ${cy}H${f(cx+r*1.15)}M${cx} ${f(cy-r*1.15)}V${f(cy+r*1.15)}" stroke="#9fd3ff" stroke-width=".7" stroke-dasharray="8 3 2 3"/>`; });
+  co(wN, g.R, `${g.wheels.length} axles · aluminum rims`, 5);
+  if (R) { const du = LQ ? c0 + g.cargo*.5 : xb + (xe-xb)*.45; if (!cabU.length) s += `<text x="${X(du)}" y="${Y(6.6)}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-style="italic" font-weight="800" font-size="${f(1.1*S)}" letter-spacing="2" fill="${hex2rgb(COLORS[clean(cfg.color)]||'#ccc').reduce((a,b)=>a+b,0)<300?'#fff':'#1d2b3a'}" opacity=".45">MILLENNIUM</text>`; }
+  // dimensions + scale bar
+  const dy1 = GY + 20, dy2 = GY + 40, dir = curb ? -1 : 1;
+  const xa = X(g.GN ? 0 : xb), xz = X(xe);
+  s += dimH(Math.min(xa,xz), Math.max(xa,xz), dy1, `${g.L}' TRAILER LENGTH`, T, 12);
+  const seg = (u1,u2,t) => { const a = X(u1), b = X(u2); s += dimH(Math.min(a,b), Math.max(a,b), dy2, t, T); };
+  seg(0, xb, g.GN ? `GN DECK ${xb}'` : 'TONGUE');
+  if (LQ) seg(xb, c0, `LQ ${lq}'`);
+  seg(c0, xe, `CARGO ${f(g.cargo)}'`);
+  s += dimV(f(+X(xe) + 24*dir), GY, Y(T0), `≈${T0===10?"10'-0\"":"11'-0\""} EXT. HEIGHT`, T);
+  s += scaleBar(curb ? 30 : 1200-30-10*S, H-8, S, T, curb);
+  s += callouts(items.filter(i=>i.text), [20, 42, 64, GY+64, GY+86, GY+108].map(f), T, 8, 1192);
+  return { svg:s, H };
+}
+function scaleBar(x, y, S, T, left){
+  const c = T.R ? '#3b4652' : '#bfe3ff'; let s = '';
+  for (let i=0;i<2;i++) s += `<rect x="${f(x+i*5*S)}" y="${y-4}" width="${f(5*S)}" height="5" fill="${i? 'none' : c}" stroke="${c}"/>`;
+  s += `<text x="${f(x)}" y="${y-7}" class="t" font-size="9" fill="${c}">0</text><text x="${f(x+5*S)}" y="${y-7}" text-anchor="middle" class="t" font-size="9" fill="${c}">5</text><text x="${f(x+10*S)}" y="${y-7}" text-anchor="end" class="t" font-size="9" fill="${c}">10 ft</text>
+        <text x="${f(left ? x+10*S+8 : x-8)}" y="${y+1}" text-anchor="${left?'start':'end'}" class="t" font-size="9" fill="${c}">${cfg.scale==='true'?'TRUE SCALE':'FIT TO WIDTH'} · ${f(S)} px/ft</text>`;
+  return s;
+}
+function ledPositions(){
+  const g = M.g, n = M.leds, k = Math.ceil(n/2), a = g.c0 + 1.2, b = g.xe - 1.6;
+  return Array.from({length:k}, (_,i)=> a + (i+.5)*(b-a)/k);
+}
+
+// =====================================================================
+// FLOOR PLAN (top-down, roof removed; front left, curbside top, roadside bottom)
+// =====================================================================
+function drawPlan(){
+  const m = M, g = m.g, T = theme(), R = T.R, LQ = hasLQ();
+  const {S, X0, xb, xe, c0} = g, Wd = 8.5, t = .22, lq = g.lqDraw;
+  const PT = f(78 + 2.0*S), bot = f(PT + Wd*S), H = f(bot + 160);
+  const X = u => f(X0 + u*S), Y = v => f(PT + v*S), D = n => f(n*S);
+  const st = R ? '#2a323a' : '#fff';
+  const rect = (u1,v1,u2,v2,a) => `<rect x="${X(Math.min(u1,u2))}" y="${Y(Math.min(v1,v2))}" width="${D(Math.abs(u2-u1))}" height="${D(Math.abs(v2-v1))}" ${a||''}/>`;
+  const line = (u1,v1,u2,v2,a) => `<line x1="${X(u1)}" y1="${Y(v1)}" x2="${X(u2)}" y2="${Y(v2)}" ${a||''}/>`;
+  const txt = (u,v,str,size,a) => `<text x="${X(u)}" y="${Y(v)}" text-anchor="middle" class="t" font-size="${size||9}" font-weight="700" ${a||''} fill="${R?'#1f2a36':'#fff'}">${esc(str)}</text>`;
+  const O = R ? 'stroke="#2a323a" stroke-width="1"' : 'stroke="#fff" stroke-width="1.1" fill="none"';
+  const WOOD = R ? 'fill="#000" filter="url(#fWood)" stroke="#5a3b1c"' : O;      // LQ cabinetry (wood) 
+  const ALU  = R ? 'fill="url(#gAluH)" stroke="#59616a"' : 'fill="url(#bpCross)" stroke="#ffe08a" stroke-width="1.2"';  // cargo cabinets (aluminum)
+  const items = []; const co = (u, v, text, pref, hl) => items.push({ ax:X(u), ay:Y(v), text, pref, hl });
+  const r = v => xb + v;
+  let s = R ? `<rect width="1200" height="${H}" fill="#eef1f4"/>` : `<rect width="1200" height="${H}" fill="#1b4a8a"/><rect width="1200" height="${H}" fill="url(#pGrid5)"/>`;
+
+  // ---- gooseneck deck / tongue
+  if (g.GN) {
+    const neck = `M${X(xb)} ${Y(0)} L${X(1.2)} ${Y(0)} Q${X(0)} ${Y(0)} ${X(0)} ${Y(1.2)} L${X(0)} ${Y(Wd-1.2)} Q${X(0)} ${Y(Wd)} ${X(1.2)} ${Y(Wd)} L${X(xb)} ${Y(Wd)} Z`;
+    s += R ? `<path d="${neck}" fill="#8e959c" filter="url(#fDrop)"/><path d="M${X(xb)} ${Y(t)} L${X(1.2)} ${Y(t)} Q${X(t)} ${Y(t)} ${X(t)} ${Y(1.2)} L${X(t)} ${Y(Wd-1.2)} Q${X(t)} ${Y(Wd-t)} ${X(1.2)} ${Y(Wd-t)} L${X(xb)} ${Y(Wd-t)} Z" fill="${LQ?'url(#pPlank)':'#c9cdd2'}"/>`
+           : `<path d="${neck}" fill="url(#bpHatch)" fill-opacity=".25" stroke="#fff" stroke-width="1.6" stroke-dasharray="8 4"/>`;
+    if (LQ) {
+      s += rect(.25, .3, 1.5, Wd-.3, WOOD) + (R ? '' : txt(.88, 4.4, 'CLO', 8));
+      s += rect(1.7, .9, 6.7, 7.6, R ? 'rx="6" fill="#f4efe6" stroke="#b9ae9c"' : O) + rect(3.2, .9, 6.7, 7.6, R ? 'rx="6" fill="#7d93a8" opacity=".85"' : O);
+      s += rect(1.9, 1.3, 2.9, 3.9, R?'rx="4" fill="#fff" stroke="#c9c1b3"':O) + rect(1.9, 4.6, 2.9, 7.2, R?'rx="4" fill="#fff" stroke="#c9c1b3"':O);
+      co(4.2, .9, 'GN nose: queen bed + closet', 0);
+      if (m.cabs.riser) { [[.3, 1.0],[7.5, 8.2]].forEach(([a,b]) => s += rect(1.7, a, 6.7, b, `fill="none" stroke="${R?'#3d4a57':'#ffe08a'}" stroke-width="1.1" stroke-dasharray="4 2.5"`)); co(5.5, 8.2, 'Riser/nose overhead cabinets (Elite)', 3, true); }
+    } else {
+      s += txt(4, 4.6, 'UPPER DECK STORAGE', 9);
+      if (m.cabs.riser) { s += rect(.3, .3, 2.2, Wd-.3, ALU); co(1.2, Wd-.3, 'Riser cabinets (Elite)', 3, true); }
+    }
+    [xb-.5, xb-1].forEach(u => s += line(u, .5, u, 2.6, `stroke="${st}"`));
+  } else {
+    s += `<path d="M${X(xb)} ${Y(1.3)} L${X(.8)} ${Y(Wd/2)} L${X(xb)} ${Y(Wd-1.3)}" fill="none" stroke="${R?'#2a2f35':'#fff'}" stroke-width="${R?5:1.6}"/>` + rect(0, Wd/2-.35, .9, Wd/2+.35, R?'rx="3" fill="url(#gSteelV)" stroke="#555"':O);
+  }
+  // ---- slide-out room (curbside, outside the wall)
+  if (m.slide) { const a = r(.3), b = r(6.7);
+    s += rect(a, -1.9, b, 0, R ? 'fill="url(#pPlank)" stroke="#59616a" stroke-width="3"' : 'fill="#1b4a8a" stroke="#ffe08a" stroke-width="2" stroke-dasharray="7 3"'); }
+  // ---- shell + floors
+  s += rect(xb, 0, xe, Wd, R ? 'fill="#8e959c" filter="url(#fDrop)"' : 'fill="#fff" fill-opacity=".28" stroke="#fff" stroke-width="2"');
+  if (LQ) s += rect(xb+t, t, c0, Wd-t, R ? 'fill="url(#pPlank)"' : 'fill="#1b4a8a"');
+  const FL = cfg.floor, cf = a => rect(c0 + (LQ?0:t), t, xe-t, Wd-t, a);
+  if (R) { if (FL.startsWith('TPO')) s += cf('fill="url(#pCoin)"');
+    else if (FL.startsWith('Aluminum')) s += cf('fill="url(#pTread)"') + cf('fill="#fff" filter="url(#fBrushed)" opacity=".35"');
+    else if (FL.includes('Marble')) s += cf('fill="#000" filter="url(#fMarble)"');
+    else s += cf('fill="#000" filter="url(#fPly)"'); }
+  else s += cf('fill="#1b4a8a"') + cf(`fill="url(#${FL.startsWith('TPO')?'bpCoin':FL.startsWith('Aluminum')?'bpTread':FL.includes('Marble')?'bpMarble':'bpPly'})"`);
+  if (m.slide) s += rect(r(.3), -.05, r(6.7), t+.02, R ? 'fill="url(#pPlank)"' : 'fill="#1b4a8a"');
+
+  // ---- LQ interior (Vintage "12 LQ Sofa" pattern)
+  if (LQ) {
+    const P = lqPlanParts(lq, m.slide);
+    P.curb.forEach(p => {
+      if (p.k === 'sofa') { const v0 = m.slide ? -1.7 : .3, v1 = v0 + 2.2;
+        s += rect(r(p.r0), v0, r(p.r1), v1, R?'rx="6" fill="url(#gSofa)" stroke="#3d464f"':O) + rect(r(p.r0), v0, r(p.r1), v0+.6, R?'rx="5" fill="#4d5762"':O);
+        for (let i=1;i<3;i++) s += line(r(p.r0+(p.r1-p.r0)*i/3), v0+.6, r(p.r0+(p.r1-p.r0)*i/3), v1, `stroke="${R?'#3d464f':'#fff'}" stroke-width=".8"`);
+        s += rect(r(p.r0), v0, r(p.r1), v0+1.4, `fill="none" stroke="${R?'#5a3b1c':'#9fd3ff'}" stroke-dasharray="5 3"`);
+        co(r((p.r0+p.r1)/2), v0, m.slide ? `Slide-out: ${cfg.slideContent.toLowerCase()} w/ overhead` : `6' sofa w/ overhead cab`, 0, m.slide); }
+      if (p.k === 'closet') { s += rect(r(p.r0), .25, r(p.r1), 2.3, WOOD) + (R?'':txt(r((p.r0+p.r1)/2), 1.4, 'CLO', 8)); co(r((p.r0+p.r1)/2), .25, 'Closet', 1); }
+      if (p.k === 'bunks' || p.k === 'storage') { s += rect(r(p.r0), .25, r(p.r1), 2.3, `fill="none" stroke="${R?'#5a3b1c':'#9fd3ff'}" stroke-dasharray="5 3"`) + txt(r((p.r0+p.r1)/2), 1.45, p.k==='bunks'?'BUNKS':'STOR', 8); }
+      if (p.k === 'ohstrip') s += rect(r(p.r0), .25, r(p.r1), 3.9, `fill="none" stroke="${R?'#5a3b1c':'#9fd3ff'}" stroke-dasharray="5 3"`);
+    });
+    const [d0, d1] = P.door; s += rect(r(d0), 0, r(d1), t, `fill="${R?'url(#pPlank)':'#1b4a8a'}"`);
+    s += line(r(d0), t, r(d0), t+2.4, `stroke="${st}" stroke-width="2"`) + `<path d="M${X(r(d0))} ${Y(t+2.4)} A${D(2.4)} ${D(2.4)} 0 0 0 ${X(r(d1))} ${Y(t)}" fill="none" stroke="${st}" stroke-width=".7" stroke-dasharray="3 2"/>`;
+    co(r((d0+d1)/2), 0, 'LQ entry door', 1);
+    P.road.forEach(p => {
+      if (p.k === 'galley') { s += rect(r(p.r0), 6.25, r(p.r1), Wd-t, WOOD);
+        const sk = r(p.r0+.2); s += rect(sk, 6.6, sk+1.5, 7.9, R?'rx="3" fill="url(#gSink)" stroke="#6e777f"':'fill="#1b4a8a" stroke="#fff"');
+        if (p.r1 - p.r0 >= 3.4) { const cu = r(p.r0+1.9); s += rect(cu, 6.55, cu+1.7, 7.95, R?'rx="2" fill="#1b1c1e"':'fill="#1b4a8a" stroke="#fff"');
+          [[cu+.45,6.95],[cu+1.25,7.55]].forEach(([u,v])=> s += `<circle cx="${X(u)}" cy="${Y(v)}" r="${D(.3)}" fill="none" stroke="${R?'#7a7f85':'#fff'}" stroke-width="1.4"/>`); }
+        s += rect(r(p.r0), 7.1, r(p.r1), Wd-t, `fill="none" stroke="${R?'#3a2512':'#9fd3ff'}" stroke-dasharray="5 3"`);
+        co(r((p.r0+p.r1)/2), Wd, 'Galley: sink + stove, OH cab w/ micro', 3); }
+      if (p.k === 'fridge') { s += rect(r(p.r0), 6.0, r(p.r1), Wd-t, R?'fill="url(#gSteelH)" stroke="#59616a"':O) + (R?'':txt(r((p.r0+p.r1)/2), 7.4, 'REF', 8)); co(r((p.r0+p.r1)/2), Wd, 'Refrigerator', 4); }
+      if (p.k === 'pantry') s += rect(r(p.r0), 6.25, r(p.r1), Wd-t, WOOD) + (R?'':txt(r((p.r0+p.r1)/2), 7.4, 'PAN', 8));
+    });
+    // bath (rear roadside)
+    const [b0, b1] = P.bath, corner = cfg.bath === 'Corner Bath', bv = 3.8;
+    const poly = corner ? [[b0,bv+1.4],[b0+1.4,bv],[b1,bv],[b1,Wd-t],[b0,Wd-t]] : [[b0,bv],[b1,bv],[b1,Wd-t],[b0,Wd-t]];
+    s += `<polygon points="${poly.map(([a,b])=>`${X(r(a))},${Y(b)}`).join(' ')}" fill="${R?'url(#pTile)':'#fff'}" ${R?'':'fill-opacity=".07"'} stroke="${R?'#5b636b':'#fff'}" stroke-width="${R?3:2}"/>`;
+    const dA = b1-3.0, dB = b1-1.2; s += line(r(dA), bv, r(dB), bv, `stroke="${R?'#f2f2f2':'#1b4a8a'}" stroke-width="4"`) + `<path d="M${X(r(dA))} ${Y(bv)} A${D(1.8)} ${D(1.8)} 0 0 1 ${X(r(dB))} ${Y(bv+1.8)}" fill="none" stroke="${st}" stroke-width=".7" stroke-dasharray="3 2"/>`;
+    if (corner) s += `<path d="M${X(r(b0+.15))} ${Y(Wd-t)} L${X(r(b0+.15))} ${Y(5.6)} A${D(2.4)} ${D(2.4)} 0 0 1 ${X(r(b0+2.55))} ${Y(Wd-t)} Z" fill="${R?'#dfe8ee':'none'}" stroke="${st}"/>`;
+    else s += rect(r(b0+.15), 5.7, r(b0+2.3), Wd-t-.05, R?'fill="#dfe8ee" stroke="#2a323a"':O) + line(r(b0+.15), 5.7, r(b0+2.3), Wd-t, `stroke="${st}" stroke-width=".5"`);
+    s += rect(r(b1-1.5), 6.7, r(b1-.15), Wd-t, WOOD) + `<ellipse cx="${X(r(b1-.82))}" cy="${Y(7.5)}" rx="${D(.45)}" ry="${D(.4)}" fill="${R?'url(#gSink)':'none'}" stroke="${st}" stroke-width=".8"/>`;
+    s += rect(r(b1-.6), 4.35, r(b1-.15), 5.55, R?'rx="2" fill="#fafafa" stroke="#7d868f"':O) + `<ellipse cx="${X(r(b1-1.15))}" cy="${Y(4.95)}" rx="${D(.6)}" ry="${D(.42)}" fill="${R?'#fff':'none'}" stroke="${st}"/>`;
+    if (!R) s += txt(r(b0+2.9), 6.2, 'BATH', 9);
+    co(r((b0+b1)/2), Wd, `${cfg.bath} (rear roadside): shower · toilet · lav`, 4);
+    // LQ A/C on ceiling
+    if (cfg.acLQ === 'Yes') { s += icon('ac', X(xb+3.6), Y(4.3), T); co(xb+3.6, 3.8, 'A/C (roof, above)', 2); }
+    // partition wall + door
+    s += rect(c0-.12, t, c0+.12, .6, R?'fill="#8e959c"':'fill="#fff"') + rect(c0-.12, 3.1, c0+.12, Wd-t, R?'fill="#8e959c"':'fill="#fff"');
+    s += line(c0+.12, 3.1, c0+2.62, 3.1, `stroke="${st}" stroke-width="2"`) + `<path d="M${X(c0+2.62)} ${Y(3.1)} A${D(2.5)} ${D(2.5)} 0 0 0 ${X(c0+.12)} ${Y(.6)}" fill="none" stroke="${st}" stroke-width=".7" stroke-dasharray="3 2"/>`;
+  } else {
+    // non-LQ: standard curbside side door near the front of the cargo area
+    const d0 = c0 + 2.6; s += rect(d0, 0, d0+2.6, t, `fill="${R?'#2f353b':'#1b4a8a'}" ${R?'':'stroke="#fff"'}`);
+  }
+
+  // ---- cargo: wheel wells, E-track, D-rings, spare tire
+  const w0 = g.wheels[0], wN = g.wheels[g.wheels.length-1];
+  [[t, 1.15],[Wd-1.15, Wd-t]].forEach(([a,b]) => s += rect(w0-1.6, a, wN+1.6, b, R?'fill="url(#pTread)" stroke="#5b636b"':'fill="url(#bpHatch)" stroke="#fff"'));
+  const cs = c0 + (LQ ? .3 : .3);
+  const et = v => [[cs, w0-1.6],[wN+1.6, xe-.45]].filter(([a,b])=>b-a>.5).map(([a,b]) =>
+      (R ? rect(a, v-.1, b, v+.1, 'fill="url(#gSteelV)" stroke="#6e777f" stroke-width=".6"') + line(a+.1, v, b-.1, v, 'stroke="#2a2f35" stroke-width="2" stroke-dasharray="5 4"')
+         : rect(a, v-.1, b, v+.1, 'fill="none" stroke="#fff" stroke-width=".9"') + line(a+.1, v, b-.1, v, 'stroke="#fff" stroke-width="1.5" stroke-dasharray="5 4"'))).join('');
+  s += et(t+.28) + et(Wd-t-.28);
+  co((wN+1.6+xe)/2, t+.28, 'E-track (both walls)', 2);
+  const dr = [[c0 + g.cargo*.35, 1.55],[c0 + g.cargo*.35, 5.9],[xe-2.4, 1.55],[xe-2.4, 5.9]];
+  dr.forEach(([u,v]) => s += rect(u-.28, v-.2, u+.28, v+.2, R?'rx="2" fill="#8d959d" stroke="#3b4249"':O) + `<circle cx="${X(u)}" cy="${Y(v)}" r="${D(.3)}" fill="none" stroke="${R?'#d6dbe0':'#fff'}" stroke-width="2"/>`);
+  co(dr[2][0], 1.35, 'D-rings installed', 1);
+  const sp0 = c0 + 3.2;
+  s += rect(sp0, 1.0, sp0+2.6, 3.6, R?'fill="#2b2f33" stroke="#9aa2aa" stroke-width="2"':'fill="none" stroke="#fff" stroke-dasharray="6 3"') + `<circle cx="${X(sp0+1.3)}" cy="${Y(2.3)}" r="${D(1.1)}" fill="${R?'url(#gTire)':'none'}" stroke="${st}"/><circle cx="${X(sp0+1.3)}" cy="${Y(2.3)}" r="${D(.62)}" fill="${R?'url(#gRim)':'none'}" stroke="${st}" stroke-width=".7"/>`;
+  co(sp0+1.3, 1.0, 'Recessed spare tire', 0);
+  // ---- generator compartment + power center
+  if (cfg.genComp === 'Yes') { s += rect(c0+.2, 6.3, c0+2.6, Wd-t, R?'fill="#4b5258" stroke="#22272c"':'fill="url(#bpHatch)" stroke="#fff" stroke-width="1.2"') + icon('gen', X(c0+1.75), Y(7.35), T);
+    co(c0+1.4, Wd, `Generator compartment${genKW()?` (${genKW()} kW Onan)`:cfg.generator.startsWith('Prep')?' (portable prep)':''}`, 3); }
+  if (m.E.ats) { s += icon('ats', X(c0+.75), Y(6.85), T); co(c0+.75, 6.4, 'Automatic transfer switch', 5, true); }
+  if (m.E.tier > 0) { s += icon('panel', X(c0+.55), Y(3.75), T, { amps:m.E.amps }) + icon('batt', X(c0+1.6), Y(3.75), T, { li: m.E.tier === 3 });
+    co(c0+1.1, 4.3, `${m.E.amps} panel + converter + ${m.E.tier===3?'Li':'12V'} battery`, 4, true); }
+  // ---- cabinets (aluminum): base solid, overhead dashed
+  const cb = m.cabs;
+  if (cb.L && cb.base.length) { s += rect(c0+.15, 4.45, c0+2.15, 6.28, ALU); }
+  cb.base.forEach(p => {
+    if (p.kind === 'closet') s += rect(p.u0, 5.9, p.u1, Wd-t, R?'fill="url(#gAluH)" stroke="#3d4a57" stroke-width="1.6"':'fill="#1b4a8a" stroke="#ffe08a" stroke-width="1.6"') + line(p.u0, 5.9, p.u1, Wd-t, `stroke="${R?'#59616a':'#ffe08a'}" stroke-width=".7"`) + line(p.u1, 5.9, p.u0, Wd-t, `stroke="${R?'#59616a':'#ffe08a'}" stroke-width=".7"`);
+    else if (p.kind === 'chest') { s += rect(p.u0, 6.28, p.u1, Wd-t, R?'fill="#c62828" stroke="#5b1010"':'fill="#1b4a8a" stroke="#ffe08a" stroke-width="1.2"'); for (let i=1;i<5;i++) s += line(p.u0+(p.u1-p.u0)*i/5, 6.35, p.u0+(p.u1-p.u0)*i/5, Wd-t-.05, `stroke="${R?'#ffd0d0':'#ffe08a'}" stroke-width=".6"`); }
+    else { s += rect(p.u0, 6.28, p.u1, Wd-t, ALU); for (let u = p.u0 + 2; u < p.u1 - .3; u += 2) s += line(u, 6.3, u, Wd-t, `stroke="${R?'#7d868f':'#ffe08a'}" stroke-width=".6"`);
+      if (p.kind === 'kit') s += txt((p.u0+p.u1)/2, 7.5, p.name.toUpperCase(), Math.min(9, S*.5)); }
+  });
+  cb.oh.forEach(p => s += rect(p.u0, 6.75, p.u1, Wd-t-.06, `fill="none" stroke="${R?'#1d2733':'#ffe08a'}" stroke-width="1.2" stroke-dasharray="6 3"`));
+  if (m.lights.underCab.on) cb.oh.forEach(p => s += line(p.u0+.1, 6.68, p.u1-.1, 6.68, R ? 'stroke="#ffd84a" stroke-width="2.4" filter="url(#fGlow)"' : 'stroke="#ffe08a" stroke-width="1.4" stroke-dasharray="1 2"'));
+  if (cb.base.length) { const bl = cb.base.filter(p=>p.kind!=='closet'&&p.kind!=='chest').reduce((a,p)=>a+p.u1-p.u0,0), ol = cb.oh.reduce((a,p)=>a+p.u1-p.u0,0);
+    const a = Math.min(...cb.base.map(p=>p.u0)), b = Math.max(...cb.base.map(p=>p.u1));
+    co((a+b)/2, Wd, `${cfg.cab} cabinets: ${f(bl)}' base${CAB[cfg.cab].kitchenette?' (incl. kitchenette)':''} + ${f(ol)}' overhead${cfg.extraBase||cfg.extraOH?` (+${cfg.extraBase}'/+${cfg.extraOH}' extra)`:''}`, 5, true);
+    const ch = cb.base.find(p=>p.kind==='chest'), cl = cb.base.find(p=>p.kind==='closet');
+    if (ch) co((ch.u0+ch.u1)/2, Wd-t, 'Tool chest', 3); if (cl) co((cl.u0+cl.u1)/2, Wd-t, 'Closet', 4); }
+  // ---- lighting
+  const ledU = ledPositions();
+  ledU.forEach((u,i) => { s += icon('led', X(u), Y(2.95), T, { len: D(1.6) }); if (i*2+1 < m.leds) s += icon('led', X(u), Y(4.95), T, { len: D(1.6) }); });
+  co(ledU[ledU.length-1], 2.95, `${m.leds} LED ceiling fixtures (${m.E.leds} in ${m.E.short}${cfg.ledPairs?` + ${cfg.ledPairs*2} extra`:''})`, 2, true);
+  if (m.lights.accent.on) [t+.5, Wd-t-.5].forEach(v => s += line(c0+.4, v, xe-.5, v, R ? 'stroke="#5ab4ff" stroke-width="2" filter="url(#fGlow)" opacity=".85"' : 'stroke="#9fd3ff" stroke-width="1.2" stroke-dasharray="4 2 1 2"'));
+  if (m.lights.accent.on) co(xe-3.5, Wd-t-.5, 'Accent / floor strip lights', 5, true);
+  const L = m.lights;
+  if (L.sceneCurb.on) [c0+1.6, xe-3.2].forEach(u => s += icon('scene', X(u), Y(-.45), T));
+  if (L.sceneRoad.on) [c0+1.6, xe-3.2].forEach(u => s += icon('scene', X(u), Y(Wd+.45), T));
+  if (L.sceneCurb.on) co(xe-3.2, -.45, 'Scene light (curbside)', 0, true);
+  if (L.sceneRoad.on) co(xe-3.2, Wd+.45, 'Scene light (roadside)', 5, true);
+  if (L.porch.on) { const pu = LQ ? r((lqPlanParts(lq, m.slide).door[0]+lqPlanParts(lq, m.slide).door[1])/2) : c0 + 3.9; s += icon('porch', X(pu), Y(-.45), T); }
+  if (L.docking.on) { s += icon('dock', X(xe+.35), Y(.4), T) + icon('dock', X(xe+.35), Y(Wd-.4), T); }
+  if (L.loadLights.on) { s += icon('load', X(xe-.7), Y(.75), T) + icon('load', X(xe-.7), Y(Wd-.75), T); }
+  if (L.spoiler.on) s += rect(xe-1.8, .2, xe+.15, Wd-.2, `fill="none" stroke="${R?'#30363c':'#ffe08a'}" stroke-dasharray="2 3"`);
+  // awning (curbside, retracted case) + LED
+  if (cfg.addl === 'Awning') { const a0 = m.slide ? xb + 7.0 : xb + .6, a1 = Math.min(a0 + 18, xe - 2.5);
+    s += rect(a0, -.32, a1, -.05, R ? 'fill="url(#gChrome)" stroke="#59616a"' : 'fill="none" stroke="#fff"');
+    if (L.awningLed.on) s += line(a0+.2, -.4, a1-.2, -.4, R ? 'stroke="#ffd84a" stroke-width="2" filter="url(#fGlow)"' : 'stroke="#ffe08a" stroke-width="1.3" stroke-dasharray="1 2"');
+    co(a0 + 1, -.32, `Awning (retracted)${L.awningLed.on?' + LED strip':''}`, 1, L.awningLed.on); }
+  // roof items (dashed: above)
+  if (m.solarOn) { s += icon('solar', X(c0+3.3), Y(3.95), T); co(c0+3.3, 3.55, '~30W trickle-charge solar (roof)', 1, true); }
+  if (cfg.acCargo === 'Yes') { s += icon('ac', X(c0+g.cargo*.55), Y(4.25), T); co(c0+g.cargo*.55, 3.8, 'A/C — cargo (roof)', 0); }
+  // ---- escape door, ramp
+  if (cfg.addl.startsWith('Escape Door')) { s += rect(g.wc-1.3, Wd-t, g.wc+1.3, Wd, R?'fill="#2f353b"':'fill="#1b4a8a" stroke="#fff"') + line(g.wc-1.3, Wd+.15, g.wc+1.3, Wd+.15, `stroke="${R?'#e0572a':'#9fd3ff'}" stroke-width="2"`); co(g.wc, Wd+.15, 'Escape door (roadside)', 5); }
+  s += rect(xe-.28, t, xe, Wd-t, R?'fill="url(#pTread)" stroke="#59616a"':'fill="#fff" fill-opacity=".5" stroke="#fff"');
+  s += rect(xe+.05, .45, xe+6.8, Wd-.45, R?'fill="url(#pTread)" opacity=".38" stroke="#59616a" stroke-dasharray="6 3"':'fill="none" stroke="#9fd3ff" stroke-width="1.2" stroke-dasharray="8 4"');
+  co(xe+3.4, Wd-.45, 'Ramp door (lowered)', 3);
+  if (R) s += rect(xb, 0, xe, Wd, 'fill="none" stroke="#3b434b" stroke-width="1.2"');
+  // ---- dims, labels, scale
+  const dy = +bot + 122;
+  s += dimH(+X(0), +X(xb), dy, g.GN ? `GN DECK ${xb}'` : 'TONGUE', T);
+  if (LQ) s += dimH(+X(xb), +X(c0), dy, `LQ ${lq}'`, T);
+  s += dimH(+X(c0), +X(xe), dy, `CARGO ${f(g.cargo)}' · floor: ${FL}`, T);
+  s += dimV(+X(0) - 30, +Y(0), +Y(Wd), `8'-6"`, T);
+  const lc = R ? '#56626f' : '#bfe3ff';
+  s += `<text x="${X(0)}" y="${+Y(0)-6}" class="t" font-size="10" font-weight="700" fill="${lc}" text-anchor="end" transform="translate(-6 0)">CURBSIDE ▲</text>
+        <text x="${X(0)}" y="${+Y(Wd)+14}" class="t" font-size="10" font-weight="700" fill="${lc}" text-anchor="end" transform="translate(-6 0)">ROADSIDE ▼</text>`;
+  s += scaleBar(1200-30-10*S, H-8, S, T, false);
+  s += callouts(items, [18, 40, 62, +bot+26, +bot+48, +bot+70, +bot+92].map(f), T, 8, 1192);
+  return { svg:s, H };
+}
+
+// =====================================================================
+// CONTROLS (built once, synced after every change so sliders keep focus)
+// =====================================================================
+const $ = id => document.getElementById(id);
+function opt(sel, list, val, dis){ sel.innerHTML = list.map(o => { const v = typeof o === 'string' ? o : o.v, t = typeof o === 'string' ? clean(o) : o.t, d = dis && dis(v);
+  return `<option value="${esc(v)}" ${v===val?'selected':''} ${d?'disabled':''}>${esc(t)}${d?` — ${esc(d)}`:''}</option>`; }).join(''); }
+function buildControls(){
+  const c = $('controls');
+  c.innerHTML = `
+  <h2>Trailer</h2>
+  <div class="ctl">
+    <label for="c-hitch">Hitch type</label><select id="c-hitch"></select>
+    <label for="c-lqw">Living quarters</label><select id="c-lqw"></select>
+  </div>
+  <div class="lenbox" id="lenbox">
+    <div class="big"><span>Trailer length</span><b id="len-val"></b></div>
+    <input type="range" id="c-len" step="1">
+    <div class="ticks" id="len-ticks"></div>
+    <div class="why" id="len-why" style="margin-top:3px"></div>
+    <div style="font-size:10.5px;color:#5d6b7b" id="len-cargo"></div>
+  </div>
+  <div class="ctl"><label>Drawing scale</label><div class="radio"><label><input type="radio" name="sc" value="true" id="c-sc-true"> True scale</label><label><input type="radio" name="sc" value="fit" id="c-sc-fit"> Fit width</label></div></div>
+  <h2>Living quarters <span class="rec">RULES = RECOMMENDATION</span></h2>
+  <div class="ctl" id="lqctl">
+    <label for="c-layout">Layout</label><select id="c-layout"></select><div class="why" id="layout-why"></div>
+    <label for="c-bath">Bathroom</label><select id="c-bath"></select>
+    <label>Slide-out</label><label class="chk" id="slide-lab"><input type="checkbox" id="c-slide"> add slide-out room <select id="c-slidec" style="width:auto"></select></label><div class="why" id="slide-why"></div>
+    <label for="c-aclq">A/C – LQ</label><select id="c-aclq"></select>
+  </div>
+  <h2>Exterior &amp; cargo</h2>
+  <div class="ctl">
+    <label for="c-color">Ext. color</label><select id="c-color"></select>
+    <label for="c-fast">Fasteners</label><select id="c-fast"></select>
+    <label for="c-floor">Floor covering</label><select id="c-floor"></select>
+    <label for="c-addl">Additional opt.</label><select id="c-addl"></select>
+  </div>
+  <h2>Electrical &amp; power <span class="rec">PROPOSED TIERS</span></h2>
+  <div class="ctl">
+    <label for="c-elec">Package</label><select id="c-elec"></select><div class="why" id="elec-why"></div>
+    <label>Solar</label><label class="chk" id="solar-lab"><input type="checkbox" id="c-solar"> ~30W trickle-charge <span id="solar-tag"></span></label>
+    <label for="c-accargo">A/C – cargo</label><select id="c-accargo"></select>
+    <label for="c-gen">Generator</label><select id="c-gen"></select>
+  </div>
+  <h2>Cabinets (aluminum) <span class="rec">PROPOSED TIERS</span></h2>
+  <div class="ctl">
+    <label for="c-cab">Package</label><select id="c-cab"></select><div class="why" id="cab-why"></div>
+    <label>Extra base</label><div class="stepper" data-k="extraBase"><button data-d="-1">−</button><input type="number" id="c-xb" min="0"><button data-d="1">+</button><span class="mx" id="xb-max"></span></div>
+    <label>Extra overhead</label><div class="stepper" data-k="extraOH"><button data-d="-1">−</button><input type="number" id="c-xo" min="0"><button data-d="1">+</button><span class="mx" id="xo-max"></span></div>
+  </div>
+  <h2>Extra lighting (à la carte)</h2>
+  <div class="ctl"><label>LED pairs</label><div class="stepper" data-k="ledPairs"><button data-d="-1">−</button><input type="number" id="c-led" min="0" max="6"><button data-d="1">+</button><span class="mx" id="led-tot"></span></div></div>
+  <div id="lights"></div>
+  <div style="margin-top:10px"><button id="btn-photos" style="width:100%;font:700 13px var(--ui);padding:8px;border-radius:8px;border:0;background:#0f1d2e;color:#fff;cursor:pointer">📷 See photo examples</button></div>`;
+  $('lights').innerHTML = LIGHTS.map(l => `<label class="chk" id="lt-${l.id}"><input type="checkbox" data-light="${l.id}"> <span>${esc(l.label)}</span> <span class="tg2"></span></label>`).join('');
+  const on = (id, ev, fn) => $(id).addEventListener(ev, fn);
+  const set = (k, id, ev) => on(id, ev||'change', e => { cfg[k] = e.target.value; update(); });
+  set('hitch','c-hitch'); set('lqWanted','c-lqw'); set('bath','c-bath'); set('acLQ','c-aclq'); set('color','c-color'); set('fasteners','c-fast');
+  set('floor','c-floor'); set('addl','c-addl'); set('elec','c-elec'); set('acCargo','c-accargo'); set('generator','c-gen'); set('cab','c-cab'); set('slideContent','c-slidec');
+  on('c-layout','change', e => { if (isGN()) cfg.layout = e.target.value; else cfg.lqBP = e.target.value; update(); });
+  on('c-len','input', e => { const st = sliderSteps()[+e.target.value]; if (!st) return;
+    if (!st.ok) { const v = nearest(sliderSteps().filter(x=>x.ok).map(x=>x.v), +st.v); $('len-why').textContent = `${st.why} → ${v}'`; cfg.length = v; } else { $('len-why').textContent = ''; cfg.length = st.v; }
+    update(true); });
+  ['c-sc-true','c-sc-fit'].forEach(id => on(id,'change', e => { cfg.scale = e.target.value; update(); }));
+  on('c-slide','change', e => { cfg.slide = e.target.checked; update(); });
+  on('c-solar','change', e => { cfg.solar = e.target.checked; update(); });
+  document.querySelectorAll('.stepper').forEach(st => { const k = st.dataset.k, inp = st.querySelector('input');
+    st.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { cfg[k] = Math.max(0, (+cfg[k]||0) + +b.dataset.d); update(); }));
+    inp.addEventListener('change', () => { cfg[k] = Math.max(0, Math.round(+inp.value||0)); update(); }); });
+  document.querySelectorAll('[data-light]').forEach(cb => cb.addEventListener('change', e => { cfg.lights[e.target.dataset.light] = e.target.checked; update(); }));
+  on('btn-photos','click', openPhotos);
+}
+function syncControls(keepLenWhy){
+  const m = M, GN = isGN(), LQ = hasLQ();
+  opt($('c-hitch'), FORM.hitch.choices, cfg.hitch); opt($('c-lqw'), FORM.lqWanted.choices, cfg.lqWanted);
+  // length slider
+  const steps = sliderSteps(), idx = Math.max(0, steps.findIndex(s=>s.v===String(cfg.length)));
+  const r = $('c-len'); r.min = 0; r.max = steps.length-1; r.value = idx;
+  $('len-val').textContent = `${cfg.length}'`;
+  const every = steps.length > 12 ? 2 : 1;
+  $('len-ticks').innerHTML = steps.map((s,i)=> (i % every === 0 || i === steps.length-1) ? `<span class="${s.ok?'':'x'}" title="${esc(s.why||'')}">${s.v}</span>` : '').join('');
+  if (!keepLenWhy) $('len-why').textContent = '';
+  $('len-cargo').innerHTML = `${GN?'Gooseneck/5th wheel':'Bumper pull'} · cargo = ${GN?`${cfg.length} − ${LQ?m.g.lqDraw+' LQ − ':''}${RULES.gnDeck} deck`:`${cfg.length}${LQ?' − '+m.g.lqDraw+' LQ':''}`} = <b>${f(m.g.cargo)}'</b>` + (LQ && GN ? ` (min ${RULES.minCargo}' rec.)` : '');
+  $('c-sc-'+cfg.scale).checked = true;
+  // LQ
+  $('lqctl').style.opacity = LQ ? 1 : .45;
+  const layOpts = m.lays.map(l => ({ v: GN ? l.id : String(l.lq), t: l.label + (l.slideBoxLen ? '' : '') }));
+  opt($('c-layout'), layOpts, GN ? cfg.layout : String(cfg.lqBP), v => { const l = m.lays.find(x=> (GN?x.id:String(x.lq))===v); return l && !l.ok ? l.why : ''; });
+  $('c-layout').disabled = !LQ; $('layout-why').textContent = LQ ? (m.lays.filter(l=>!l.ok).map(l=>`${l.label}: ${l.why}`).join(' · ')) : '';
+  opt($('c-bath'), FORM.bath.choices, cfg.bath, v => LQ && !m.bathOK.includes(v) ? `${RULES.cornerOnly.join('/')}' layouts only` : ''); $('c-bath').disabled = !LQ;
+  $('c-slide').checked = m.slide; $('c-slide').disabled = !m.slideOk; $('slide-lab').classList.toggle('dis', !m.slideOk);
+  opt($('c-slidec'), RULES.slide.content, cfg.slideContent); $('c-slidec').disabled = !m.slideOk;
+  $('slide-why').textContent = m.slideOk ? `Curbside, behind GN step, ahead of axles; +${RULES.slideExtraIn}" height${isGN() && curLayout().slideBoxLen > curLayout().lq ? `; ${curLayout().slideBoxLen}' box` : ''}` : m.slideWhy;
+  $('slide-why').style.color = m.slideOk ? '#5d6b7b' : '';
+  opt($('c-aclq'), FORM.acLQ.choices, cfg.acLQ); $('c-aclq').disabled = !LQ;
+  opt($('c-color'), FORM.color.choices, cfg.color); opt($('c-fast'), FORM.fasteners.choices, cfg.fasteners);
+  opt($('c-floor'), FORM.floor.choices, cfg.floor); opt($('c-addl'), FORM.addl.choices, cfg.addl);
+  // electrical
+  opt($('c-elec'), FORM.elec.choices, cfg.elec, v => m.need50 && ELEC[v].tier < 2 ? '50A required' : '');
+  $('elec-why').textContent = m.need50 ? m.why50 + ' → Deluxe or Premium only' : '';
+  $('c-solar').checked = m.solarOn; $('c-solar').disabled = m.E.tier !== 2; $('solar-lab').classList.toggle('dis', m.E.tier !== 2);
+  $('solar-tag').innerHTML = m.E.tier === 3 ? '<span class="inc">INCLUDED</span>' : m.E.tier === 2 ? '<span class="req">(Deluxe option)</span>' : '<span class="req">Deluxe option / incl. in Premium</span>';
+  opt($('c-accargo'), FORM.acCargo.choices, cfg.acCargo); opt($('c-gen'), FORM.generator.choices.map(c=>({v:c, t:c.replace(/^([\d.]+) Onan Commercial Generator.*$/, '$1 kW Onan (under trailer)')})), cfg.generator);
+  // cabinets
+  opt($('c-cab'), Object.keys(CAB), cfg.cab, v => m.cabOpts.find(o=>o.k===v).ok ? '' : "doesn't fit");
+  $('cab-why').textContent = m.cabOpts.filter(o=>!o.ok).map(o=>`${o.k}: ${o.why}`).join(' · ');
+  const none = cfg.cab === 'None';
+  [['c-xb','extraBase',m.maxB,'xb-max'],['c-xo','extraOH',m.maxO,'xo-max']].forEach(([id,k,mx,lab]) => { const inp = $(id); inp.value = cfg[k]; inp.max = mx;
+    inp.parentElement.querySelectorAll('input,button').forEach(el => el.disabled = none);
+    if (!none) { inp.parentElement.querySelector('[data-d="1"]').disabled = cfg[k] >= mx; inp.parentElement.querySelector('[data-d="-1"]').disabled = cfg[k] <= 0; }
+    $(lab).textContent = none ? 'needs cabinets' : `ft · max ${mx}`; });
+  $('c-led').value = cfg.ledPairs; $('led-tot').textContent = `= ${m.leds} fixtures`;
+  document.querySelector('.stepper[data-k=ledPairs] [data-d="1"]').disabled = cfg.ledPairs >= 6;
+  LIGHTS.forEach(l => { const st = m.lights[l.id], row = $('lt-'+l.id), cb = row.querySelector('input');
+    cb.checked = st.on; cb.disabled = st.dis; row.classList.toggle('dis', !!st.why);
+    row.querySelector('.tg2').innerHTML = st.incl ? `<span class="inc">INCLUDED · ${esc(st.by)}</span>` : st.why ? `<span class="req">${esc(st.why)}</span>` : ''; });
+}
+
+// =====================================================================
+// PANELS: notices, package summary, legend, form config table
+// =====================================================================
+function renderPanels(){
+  const m = M, T = theme();
+  $('notices').innerHTML = (m.N.length ? m.N : [['info','No conflicts: all selections satisfy the form logic and proposed rules.']]).map(([lv, t]) => `<li class="${lv}">${esc(t)}</li>`).join('')
+    + `<li class="info" style="color:#6b7a8b">Rules source: lq_layouts.json — ${esc(RULES.status)}.</li>`;
+  const eT = Object.keys(ELEC).filter(k=>k!=='None'), cT = Object.keys(CAB).filter(k=>k!=='None');
+  const maxRows = a => Math.max(...a.map(x=>x.length));
+  const tbl = (title, keys, data, cur) => `<table class="pk"><tr>${keys.map(k=>`<th class="${k===cur?'sel':''}">${esc(title)} ${esc(data[k].short||k)}${k===cur?' ✓':''}</th>`).join('')}</tr>
+      ${Array.from({length:maxRows(keys.map(k=>data[k].items))}, (_,i)=>`<tr>${keys.map(k=>`<td class="${k===cur?'sel':''}">${data[k].items[i] ? '• '+esc(data[k].items[i]) : ''}</td>`).join('')}</tr>`).join('')}</table>`;
+  const extras = LIGHTS.filter(l => m.lights[l.id].on && !m.lights[l.id].incl).map(l=>l.label);
+  if (cfg.ledPairs) extras.unshift(`${cfg.ledPairs} extra interior LED pair${cfg.ledPairs>1?'s':''}`);
+  const auto = [];
+  if (hasLQ()) auto.push('LQ (Vintage std): wired for A/C, battery box + converter, egress window, insulated walls/ceiling, porch light');
+  if (hasLQ() && isGN()) auto.push('Gooseneck LQ: Gas Package, hydraulic jack, monitor panel, 60/60/30 gal tanks');
+  $('summary').innerHTML = `<div style="margin-bottom:4px"><b>Electrical:</b> ${esc(m.E.short)} (${esc(m.E.amps)}) · <b>Cabinets:</b> ${esc(cfg.cab)}${cfg.extraBase||cfg.extraOH?` + ${cfg.extraBase}' base / ${cfg.extraOH}' overhead extra`:''} · <b>Solar:</b> ${m.solarOn?'~30W trickle charge':'—'}</div>`
+    + tbl('', eT, ELEC, cfg.elec) + '<div style="height:6px"></div>' + tbl('', cT, CAB, cfg.cab)
+    + `<div style="margin-top:6px"><b>À-la-carte extras:</b> ${extras.length ? extras.map(esc).join(' · ') : 'none'}</div>`
+    + (auto.length ? `<div style="margin-top:3px"><b>Auto-included:</b> ${auto.map(esc).join('; ')}</div>` : '')
+    + `<div style="margin-top:3px;color:#6b7a8b">Solar is trickle-charge only (~30W battery maintainer). No prices — Millennium has not set any.</div>`;
+  const lg = [['base','Base cabinet (solid)'],['oh','Overhead cabinet (dashed)'],['closet','Closet (full height)'],['chest','Tool chest'],['led','LED ceiling fixture'],['underCab','Under-cabinet LED'],['accent','Accent / floor strip'],
+    ['scene','Scene light'],['porch','Porch light'],['dock','Docking light'],['load','Rear load light'],['spoiler','Spoiler light'],['solar','~30W trickle solar'],['panel','Electrical panel'],['ats','Auto transfer switch'],['batt','Battery (12V)'],['battLi','Lithium battery'],['gen','Generator'],['ac','A/C (roof, above)']];
+  $('legend').innerHTML = lg.map(([k, t]) => `<div><svg viewBox="0 0 34 20">${icon(k==='battLi'?'batt':k, 17, 10, T, { li:k==='battLi', amps:'50', len:22 })}</svg>${esc(t)}</div>`).join('');
+  const rows = [['Hitch Type','hitch',cfg.hitch,1],['Living Quarters Trailer?','lqWanted',cfg.lqWanted,1],['Trailer Length', isGN()?(hasLQ()?'lenGN':'lenGNno'):(hasLQ()?'lenBP':'lenBPno'), cfg.length,1,v=>v+"'"],
+    ['Living Quarters Size', isGN()?'lqGN':'lqBP', hasLQ()?String(curLayout().lq):'—',1,v=>v==='—'?v:v+"'"],['Bathroom Type','bath',hasLQ()?cfg.bath:'—',1],['Rear Door','rearDoor',FIXED.rearDoor],
+    ['Floor Covering','floor',cfg.floor,1],['Wall Material','walls',FIXED.walls],['Require Cabinets','cabinets',cfg.cab==='None'?'No':'Yes',1,v=>`${v} (${cfg.cab})`],
+    ['A/C – LQ / Cargo','acCargo',cfg.acCargo,1,v=>`${hasLQ()?cfg.acLQ:'—'} / ${v}`],['Generator','generator',cfg.generator,1],['110V Electrical Packages','elec',cfg.elec,1],['LED Lighting','led','Yes'],
+    ['Tie Down System','tiedown',FIXED.tiedown],['Additional Option','addl',cfg.addl,1],['Exterior Color','color',cfg.color,1],['Exterior Fasteners','fasteners',cfg.fasteners,1]];
+  const ok = (k,v) => { const c = FORM[k] && FORM[k].choices; return v==='—' || !c || (Array.isArray(v) ? v.every(x=>c.includes(x)) : c.includes(v)); };
+  const half = Math.ceil(rows.length/2);
+  const cell = ([k,key,v,live,fmt]) => `<td class="k">${esc(k)}</td><td class="v" style="${live?'color:var(--acc)':''}">${esc(Array.isArray(v)?v.join(' + '):clean(fmt?fmt(v):v))}${ok(key,v)?'':' ⚠'}</td>`;
+  $('cfgtable').innerHTML = Array.from({length:half}, (_,i)=>`<tr>${cell(rows[i])}${rows[i+half]?cell(rows[i+half]):''}</tr>`).join('')
+    + `<tr><td colspan="4" style="color:#6b7a8b">Colored values follow the controls; values are validated against the form's choice lists (⚠ = not a form choice). Slide-out, package tiers, extra feet and à-la-carte lighting are proposed additions not in today's form.</td></tr>`;
+}
+
+// =====================================================================
+// PHOTO EXAMPLES (swappable data object; manifest from trailer-research/mill_visuals)
+// =====================================================================
+const PHOTOS = {"credit": "Photos: Millennium Trailers", "base": "photos/", "items": [{"file": "mill_visuals/exterior/40ft_white_35022_00.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Exterior-2-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "exterior", "tags": ["aluminum_wheels", "color_white", "entry_door", "len_40", "lq_windows", "setting_real_lot", "tri_axle"], "caption": "White gooseneck, tri-axle, silver aluminum gooseneck nose/stone guard, LQ windows and entry door on side, red/white reflective tape; window sticker \"40\".", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "front 3/4", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/lq/40ft_white_35022_02.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Interior-1-scaled.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "lq", "tags": ["cab_wood_light", "color_white", "fridge_2door", "galley", "gn_bed", "ladder", "layout_sofa_pedestal_table", "len_40", "overhead_cabinets"], "caption": "Looking forward: queen bed on raised gooseneck deck with ladder, overhead cabinets across front; galley left w/ 2-door fridge, stainless sink, cooktop; pedestal table + black sofa right; mini-blinds. light oak/natural wood-grain cabinet doors.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "overview fwd", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/40ft_white_35022_03.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Interior-5-scaled.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "lq", "tags": ["bath_door_rear", "cab_wood_light", "color_white", "entry_door", "len_40", "microwave_overhead"], "caption": "Looking rear: white bath door with mirror panel at rear, wood-grain entry door, overhead microwave and fridge right, sofa left. light oak/natural wood-grain cabinet doors.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward rear", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/40ft_white_35022_04.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Interior-2-scaled.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "lq", "tags": ["bath", "color_white", "len_40", "shower_glass_door"], "caption": "Shower stall: white surround, chrome handheld shower, frosted glass door (listing text says corner shower; shape not fully visible).", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "bath", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/40ft_white_35022_05.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Interior-3-scaled.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "lq", "tags": ["bath", "color_white", "len_40", "toilet"], "caption": "White RV toilet, wood-grain door, light walls.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "bath", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/40ft_white_35022_06.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Interior-4-scaled.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "lq", "tags": ["bath", "color_white", "len_40", "vanity"], "caption": "White oval sink in dark counter, frameless mirror.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "bath", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/40ft_white_35022_07.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Interior-7-scaled.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "garage", "tags": ["cab_aluminum_black", "color_white", "fender_covers_diamond", "led_ceiling", "len_40", "lq_bulkhead_door", "wainscot_black"], "caption": "Garage looking forward: white walls with black lower wainscot, black coin floor, aluminum diamond-plate fender/wheel-well covers along both sides, black/aluminum overhead cabinets, white door into LQ in bulkhead, LED ceiling light.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward front bulkhead", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/40ft_white_35022_08.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Interior-6-scaled.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "garage", "tags": ["color_white", "len_40", "ramp_door", "spare_tire_wall", "wainscot_black"], "caption": "Garage looking rear to ramp door: wall-mounted spare tire, black wainscot, coin floor, fender covers.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward rear", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/exterior/40ft_white_35022_09.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Exterior-1-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "exterior", "tags": ["color_white", "len_40", "setting_real_lot", "tri_axle"], "caption": "White gooseneck front 3/4 with aluminum gooseneck skirt and side windows.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "front 3/4", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/40ft_white_35022_10.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Exterior-3-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "exterior", "tags": ["color_white", "entry_door", "len_40", "roof_ac", "setting_real_lot", "side_profile"], "caption": "Side profile: LQ windows, entry door and side door, roof A/C unit visible, tri-axle.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "side profile", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/40ft_white_35022_11.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Exterior-6-scaled.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "exterior", "tags": ["color_white", "generator_door", "len_40", "setting_real_lot", "side_profile"], "caption": "Opposite side profile, generator/service door, tri-axle.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "side profile", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/40ft_white_35022_12.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Exterior-4-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "exterior", "tags": ["color_white", "len_40", "rear", "setting_real_lot"], "caption": "Rear 3/4: ramp door, aluminum corner trim, side doors.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "rear 3/4", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/40ft_white_35022_13.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Exterior-5-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "exterior", "tags": ["color_white", "len_40", "rear", "setting_real_lot"], "caption": "Rear 3/4, white skin, aluminum rear cap.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "rear 3/4", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/40ft_white_35022_14.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Exterior-8-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "exterior", "tags": ["color_white", "len_40", "ramp_open", "setting_real_lot"], "caption": "Ramp door down showing black interior with wall-mounted spare tire.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "ramp open", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/40ft_white_35022_15.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/09/0193-Exterior-7-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-40ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-20ft-garage-area-0193/", "area": "exterior", "tags": ["aluminum_wheels", "color_white", "len_40", "setting_real_lot", "tri_axle"], "caption": "Tri-axle with polished multi-spoke aluminum wheels, aluminum fenders.", "length_ft": 40, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "wheels", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/48ft_black_34825_00.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Image-221.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "exterior", "tags": ["color_black", "len_48", "setting_composited", "tri_axle"], "caption": "Gloss black gooseneck, tri-axle, silver gooseneck nose/stone guard, studio backdrop.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "front 3/4", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/lq/48ft_black_34825_02.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-4-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "lq", "tags": ["cab_wood_light", "color_black", "galley", "gn_bed", "layout_sofa_pedestal_table", "len_48", "setting_composited", "staged"], "caption": "Long view forward to queen bed on GN deck (ladder); black sofa + pedestal table right; galley left; jute runner rug (staged). light oak/natural wood-grain cabinet doors; wood-look vinyl plank floor; white/light textured walls; black leatherette seating; speckled granite-look laminate counters; recessed LED puck ceiling lights; ceiling A/C diffuser.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "overview fwd", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/lq/48ft_black_34825_03.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-3-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "lq", "tags": ["bath_door_rear", "color_black", "cooktop_glass", "len_48", "microwave_overhead", "setting_composited"], "caption": "Looking rear from bed: sofa + pedestal table left, black glass cooktop + microwave right, bath door at rear, entry door.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward rear", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/lq/48ft_black_34825_04.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-5-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "lq", "tags": ["color_black", "layout_sofa_pedestal_table", "len_48", "overhead_cabinets", "setting_composited"], "caption": "Sofa and pedestal table with galley counter; overhead cabinets; window with blinds.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "dinette/galley", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/lq/48ft_black_34825_05.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-2-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "lq", "tags": ["cab_wood_light", "color_black", "cooktop_glass", "fridge_2door", "galley", "len_48", "microwave_overhead", "setting_composited", "sink_stainless"], "caption": "Galley: 2-door fridge with black handles, flush black glass cooktop, stainless sink, black microwave under overhead cabinets, drawer base. light oak/natural wood-grain cabinet doors.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "galley", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/lq/48ft_black_34825_06.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-1-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "lq", "tags": ["bath", "color_black", "len_48", "setting_composited", "shower_glass_door", "vanity"], "caption": "Bath: white oval sink in dark counter, wood vanity, mirror, glass shower.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "bath", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/lq/48ft_black_34825_07.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-6-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "lq", "tags": ["bath", "color_black", "len_48", "setting_composited", "toilet"], "caption": "Toilet, wood vanity, towel bar, light walls.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "bath", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_34825_08.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Image-206-2.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "garage", "tags": ["color_black", "fender_covers", "led_ceiling", "len_48", "setting_composited"], "caption": "Garage looking forward: white walls, black coin floor, white aluminum fender covers, skylight/LED strips, cabinet at front.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward front", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_34825_09.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Image-202-2.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "garage", "tags": ["cab_aluminum_black", "color_black", "countertop", "d_rings", "len_48", "setting_composited"], "caption": "Black gloss cabinets with aluminum frame trim: overhead 4-door bank + base cabinet with countertop; diamond-plate fender cover; flush D-ring.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "cabinets", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_34825_10.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Image-205-2.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "garage", "tags": ["color_black", "led_ceiling", "len_48", "setting_composited"], "caption": "Long garage view to rear; white walls, LED ceiling strips.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward rear", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/exterior/48ft_black_34825_11.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Image-217.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "exterior", "tags": ["color_black", "entry_door", "len_48", "setting_composited", "tri_axle"], "caption": "Black tri-axle gooseneck, LQ door and windows, studio backdrop.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "front 3/4", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/48ft_black_34825_12.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Image-222.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "exterior", "tags": ["color_black", "len_48", "ramp_open", "setting_composited"], "caption": "Ramp door down with spring/cable assist; spare tire visible inside.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "ramp open", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/48ft_black_34825_13.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Image-226.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "exterior", "tags": ["color_black", "len_48", "rear", "setting_composited"], "caption": "Rear 3/4, black skin with aluminum corners.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "rear 3/4", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/48ft_black_34825_14.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Image-228.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "exterior", "tags": ["color_black", "len_48", "rear", "setting_composited"], "caption": "Rear 3/4 side view.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "rear 3/4", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/48ft_black_34825_15.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Image-229.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0030/", "area": "exterior", "tags": ["aluminum_wheels", "color_black", "len_48", "setting_composited"], "caption": "Tri-axle polished aluminum wheels on black skin.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "wheels", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/53ft_white_34824_00.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Show-0098-4.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "exterior", "tags": ["color_white", "len_53", "lq_windows", "setting_composited", "tri_axle"], "caption": "White 53ft gooseneck, tri-axle, LQ windows, studio backdrop.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "front 3/4", "exterior_color": "white", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/53ft_white_34824_02.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Show-0098-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "exterior", "tags": ["color_white", "len_53", "setting_composited", "tri_axle"], "caption": "Gooseneck nose, aluminum stone guard, roadside view.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "front 3/4", "exterior_color": "white", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/53ft_white_34824_03.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Show-0098-2.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "exterior", "tags": ["color_white", "len_53", "rear", "setting_composited"], "caption": "Rear 3/4 with side doors.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "rear 3/4", "exterior_color": "white", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/lq/53ft_white_34824_04.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Staged-0098-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "lq", "tags": ["cab_wood_light", "color_white", "gn_bed", "layout_sofa_pedestal_table", "len_53", "setting_composited"], "caption": "Forward view: queen bed on GN deck with ladder, black sofa left, pedestal table, island/counter, fire extinguisher. light oak/natural wood-grain cabinet doors.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "overview fwd", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/53ft_white_34824_05.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Staged-0098-2.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "lq", "tags": ["bath_door_rear", "bunks", "color_white", "galley", "len_53", "setting_composited"], "caption": "Looking rear: bunk beds left, pedestal table, galley right with sink, bath door at rear.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "toward rear", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/53ft_white_34824_06.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Interior-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "lq", "tags": ["bunks", "bunks_folded", "color_white", "len_53", "setting_composited"], "caption": "Black upholstered bunks folded flat against wall; wood-look floor; bath door with mirror.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "bunks", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/53ft_white_34824_07.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Interior-2.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "lq", "tags": ["bunks", "color_white", "len_53", "setting_composited"], "caption": "Two black bunk mattresses down on black frames.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "bunks", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/53ft_white_34824_08.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Staged-0098-3.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "lq", "tags": ["bath", "color_white", "len_53", "setting_composited", "toilet", "vanity"], "caption": "Wood vanity, white sink, mirror, toilet.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "bath", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/53ft_white_34824_09.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/staged-0098-4.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "lq", "tags": ["bath", "color_white", "len_53", "setting_composited", "shower_glass_door"], "caption": "Rectangular white shower pan with glass door, vanity.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "bath", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/53ft_white_34824_10.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Garage-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "garage", "tags": ["cab_aluminum_white", "color_white", "countertop", "len_53", "setting_composited", "tool_drawers"], "caption": "White cabinets with aluminum trim: tall cabinet, 5-drawer stack, L-shaped base with countertop, overhead cabinets.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "cabinets", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/53ft_white_34824_11.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Garage-2.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "garage", "tags": ["color_white", "fender_covers", "len_53", "setting_composited", "spare_tire_wall"], "caption": "Garage looking forward: white walls, coin floor, fender covers, wall-mounted spare tire, cabinets at bulkhead.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "toward front", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/53ft_white_34824_12.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Garage-3.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "garage", "tags": ["color_white", "len_53", "ramp_door", "setting_composited"], "caption": "Looking rear to ramp door; coin floor; fender covers.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "toward rear", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/exterior/53ft_white_34824_13.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/Image-75.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-car-trailer-with-living-quarters-2027-53ft-platinum-gooseneck-w-24ft-lq-sleeps-6-0034/", "area": "exterior", "tags": ["aluminum_wheels", "color_white", "len_53", "setting_composited"], "caption": "Tri-axle aluminum wheels on white skin.", "length_ft": 53, "hitch": "Gooseneck", "lq_layout": "LQ16", "view": "wheels", "exterior_color": "white", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/44ft_black_34715_00.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Exterior-4.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "exterior", "tags": ["color_black", "len_44", "setting_composited", "tri_axle"], "caption": "Black tri-axle gooseneck, silver gooseneck stone guard, studio backdrop.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "front 3/4", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/lq/44ft_black_34715_02.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-2-bed_DR.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "lq", "tags": ["cab_wood_gray", "color_black", "gn_bed", "layout_sofa_pedestal_table", "len_44", "setting_composited"], "caption": "Queen bed on GN deck, sofa + pedestal table right, galley left; gray-washed wood-grain cabinet doors.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "overview fwd", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/lq/44ft_black_34715_03.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-3-DR_BR-door.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "lq", "tags": ["bath_door_rear", "cab_wood_gray", "color_black", "cooktop_glass", "len_44", "setting_composited"], "caption": "Looking rear: bath door, microwave, glass cooktop, ceiling A/C diffuser. gray-washed wood-grain cabinet doors.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward rear", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/lq/44ft_black_34715_04.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-4-DR.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "lq", "tags": ["color_black", "layout_sofa_pedestal_table", "len_44", "setting_composited"], "caption": "Sofa and pedestal table under window; overhead cabinets.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "dinette", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/lq/44ft_black_34715_05.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Staged-1-bathroom.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "lq", "tags": ["bath", "bath_corner", "color_black", "len_44", "setting_composited", "toilet", "vanity"], "caption": "Neo-angle (corner) shower with frosted glass, toilet, wood vanity, mirror.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "bath", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/44ft_black_34715_06.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Garage-1.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "garage", "tags": ["cab_aluminum_black", "color_black", "fender_covers", "len_44", "setting_composited", "wainscot_black"], "caption": "White walls, black wainscot, coin floor, fender covers, black/aluminum overhead and base cabinets at front.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward front", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/44ft_black_34715_07.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Garage-2.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "garage", "tags": ["cab_aluminum_black", "color_black", "countertop", "len_44", "setting_composited"], "caption": "Black gloss overhead cabinet bank + base cabinet with aluminum trim; diamond-plate fender.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "cabinets", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/44ft_black_34715_08.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Garage-3.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "garage", "tags": ["color_black", "len_44", "ramp_door", "setting_composited", "wainscot_black"], "caption": "Looking rear to ramp door; black wainscot.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward rear", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/exterior/44ft_black_34715_09.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Exterior-3.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "exterior", "tags": ["color_black", "len_44", "setting_composited", "side_profile"], "caption": "Black side profile: entry doors, windows.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "side", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/44ft_black_34715_10.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Exterior-1.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "exterior", "tags": ["color_black", "len_44", "rear", "setting_composited"], "caption": "Rear 3/4 black.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "rear 3/4", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/44ft_black_34715_11.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Exterior-2.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2027-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0028/", "area": "exterior", "tags": ["color_black", "len_44", "rear", "setting_composited"], "caption": "Rear 3/4 black, side doors.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "rear 3/4", "exterior_color": "black", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/44ft_white_33907_00.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/IMG_1410-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2027-44ft-platinum-car-hauler-w-finished-interior-aluminum-wheels-0015/", "area": "exterior", "tags": ["color_white", "len_44", "setting_real_lot", "tri_axle"], "caption": "White 44ft gooseneck car hauler on lot, tri-axle.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": null, "view": "front 3/4", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/garage/44ft_white_33907_02.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2025/07/IMG_1414-1-scaled.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2027-44ft-platinum-car-hauler-w-finished-interior-aluminum-wheels-0015/", "area": "garage", "tags": ["color_white", "fender_covers", "len_44", "no_lq", "wainscot_black"], "caption": "Full-length interior: white walls, black wainscot, coin floor, fender covers, cabinets at front.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": null, "view": "full length", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/44ft_white_33907_03.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2025/07/IMG_1415-1-scaled.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2027-44ft-platinum-car-hauler-w-finished-interior-aluminum-wheels-0015/", "area": "garage", "tags": ["cab_aluminum_black", "color_white", "len_44", "no_lq"], "caption": "Black/aluminum tall cabinet + base cabinet run under front gooseneck; LED lights; fender cover.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": null, "view": "cabinets", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/44ft_white_33907_04.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2025/07/IMG_1413-1-scaled.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2027-44ft-platinum-car-hauler-w-finished-interior-aluminum-wheels-0015/", "area": "garage", "tags": ["color_white", "len_44", "no_lq", "ramp_door"], "caption": "Looking rear: coin floor, fender covers, ramp door.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": null, "view": "toward rear", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/exterior/44ft_white_33907_05.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/IMG_1409-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2027-44ft-platinum-car-hauler-w-finished-interior-aluminum-wheels-0015/", "area": "exterior", "tags": ["color_white", "len_44", "setting_real_lot", "tri_axle"], "caption": "Gooseneck 3/4 on lot.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": null, "view": "front 3/4", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/44ft_white_33907_06.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/IMG_1411-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2027-44ft-platinum-car-hauler-w-finished-interior-aluminum-wheels-0015/", "area": "exterior", "tags": ["color_white", "len_44", "rear", "setting_real_lot"], "caption": "Rear 3/4.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": null, "view": "rear 3/4", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/44ft_white_33907_07.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/06/IMG_1412-scaled.png", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2027-44ft-platinum-car-hauler-w-finished-interior-aluminum-wheels-0015/", "area": "exterior", "tags": ["color_white", "len_44", "setting_real_lot", "side_profile"], "caption": "Side/rear view on lot.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": null, "view": "side", "exterior_color": "white", "setting": "dealer lot (real photo)"}, {"file": "mill_visuals/exterior/44ft_white_33634_00.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/0134-rt-bg.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "exterior", "tags": ["color_white", "len_44", "lq_windows", "setting_composited", "tri_axle"], "caption": "White gooseneck with LQ windows, raceway sunset backdrop.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "front 3/4", "exterior_color": "white", "setting": "raceway sunset backdrop (appears composited)"}, {"file": "mill_visuals/lq/44ft_white_33634_02.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_3296-scaled-e1778523168937.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "lq", "tags": ["cab_wood_gray", "color_white", "gn_bed", "layout_sofa_pedestal_table", "len_44", "setting_composited"], "caption": "Queen bed on GN deck, galley left with fridge, sofa + pedestal table right; gray-washed wood-grain cabinet doors; gray wood-look plank floor.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "overview fwd", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/44ft_white_33634_03.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_3195-scaled-e1777564058395.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "lq", "tags": ["cab_wood_gray", "color_white", "cooktop_glass", "galley", "len_44", "microwave_overhead", "setting_composited", "sink_stainless"], "caption": "Black glass cooktop, stainless sink, black microwave, window valance, gray-washed wood-grain cabinet doors.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "galley", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/44ft_white_33634_04.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_3196-scaled-e1777564197729.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "lq", "tags": ["color_white", "layout_sofa_pedestal_table", "len_44", "setting_composited"], "caption": "Black sofa and speckled pedestal table under window, rear entry and bath doors.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "dinette", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/44ft_white_33634_05.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_3297-scaled-e1778523151284.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "lq", "tags": ["bath_door_rear", "color_white", "len_44", "setting_composited", "tv"], "caption": "Looking rear: ceiling A/C diffuser, sofa, TV, bath door.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward rear", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/44ft_white_33634_06.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_3298-scaled-e1778523209544.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "lq", "tags": ["bath", "bath_corner", "color_white", "len_44", "setting_composited"], "caption": "Neo-angle corner shower frosted glass, toilet, vanity.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "bath", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/lq/44ft_white_33634_07.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_3299-scaled-e1778523224763.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "lq", "tags": ["bath", "bath_corner", "color_white", "len_44", "setting_composited", "toilet"], "caption": "Toilet beside corner shower.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "bath", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/44ft_white_33634_08.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_3191-scaled-e1777729720387.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "garage", "tags": ["cab_aluminum_black", "color_white", "len_44", "lq_bulkhead_door", "setting_composited", "wainscot_black"], "caption": "Black wainscot, coin floor, black/aluminum cabinets at bulkhead, LQ door.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward front", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/44ft_white_33634_09.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_3192-scaled-e1777729775564.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "garage", "tags": ["cab_aluminum_black", "color_white", "len_44", "setting_composited"], "caption": "Black/aluminum overhead and base cabinet.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "cabinets", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/garage/44ft_white_33634_10.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_3190-scaled-e1777729758982.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "garage", "tags": ["color_white", "len_44", "ramp_door", "setting_composited"], "caption": "Looking rear: ramp door, fender covers.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "toward rear", "exterior_color": "white", "setting": null}, {"file": "mill_visuals/exterior/44ft_white_33634_11.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/0134-rt-bg-2.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "exterior", "tags": ["color_white", "len_44", "setting_composited", "tri_axle"], "caption": "White gooseneck front 3/4, sunset raceway backdrop.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "front 3/4", "exterior_color": "white", "setting": "raceway sunset backdrop (appears composited)"}, {"file": "mill_visuals/exterior/44ft_white_33634_12.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/0134-rt-bg-3.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "exterior", "tags": ["color_white", "len_44", "rear", "setting_composited"], "caption": "Rear 3/4.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "rear 3/4", "exterior_color": "white", "setting": "raceway sunset backdrop (appears composited)"}, {"file": "mill_visuals/exterior/44ft_white_33634_13.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/0134-rt-bg-4.png", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-44ft-gooseneck-w-20ft-lq-large-bath-and-fully-finished-24ft-garage-area-0166/", "area": "exterior", "tags": ["color_white", "len_44", "rear", "setting_composited"], "caption": "Rear 3/4 with side doors.", "length_ft": 44, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "rear 3/4", "exterior_color": "white", "setting": "raceway sunset backdrop (appears composited)"}, {"file": "mill_visuals/exterior/48ft_white_32983_00.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Showroom-2.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0168/", "area": "exterior", "tags": ["color_white", "len_48", "lq_windows", "setting_composited", "tri_axle"], "caption": "White 48ft gooseneck, LQ windows, studio backdrop.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "front 3/4", "exterior_color": "white", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/48ft_white_32983_11.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Showroom-1.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0168/", "area": "exterior", "tags": ["color_white", "len_48", "setting_composited", "tri_axle"], "caption": "Gooseneck nose roadside, side vents.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "front 3/4", "exterior_color": "white", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/48ft_white_32983_12.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Showroom-3.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0168/", "area": "exterior", "tags": ["color_white", "len_48", "ramp_open", "setting_composited"], "caption": "Ramp down, spare tire inside.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "ramp open", "exterior_color": "white", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/48ft_white_32983_13.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Showroom-4.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0168/", "area": "exterior", "tags": ["color_white", "len_48", "rear", "setting_composited"], "caption": "Rear 3/4.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "rear 3/4", "exterior_color": "white", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/48ft_white_32983_14.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/Showroom-5.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-trailer-with-living-quarters-2026-48ft-w-20ft-lq-large-bath-and-fully-finished-28ft-garage-area-0168/", "area": "exterior", "tags": ["aluminum_wheels", "color_white", "len_48", "setting_composited"], "caption": "Tri-axle aluminum wheels.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": "LQ12_SOFA", "view": "wheels", "exterior_color": "white", "setting": "studio backdrop w/ Millennium Trailers logo (appears composited)"}, {"file": "mill_visuals/exterior/48ft_black_32915_00.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/0092-Racetrack-bg-2.png", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "exterior", "tags": ["color_black", "len_48", "setting_composited", "tri_axle"], "caption": "Black gooseneck, front windows in gooseneck, sunset backdrop.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "front 3/4", "exterior_color": "black", "setting": "raceway sunset backdrop (appears composited)"}, {"file": "mill_visuals/exterior/48ft_black_32915_02.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/0092-Racetrack-bg-3.png", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "exterior", "tags": ["color_black", "len_48", "rear", "setting_composited"], "caption": "Black rear 3/4.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "rear 3/4", "exterior_color": "black", "setting": "raceway sunset backdrop (appears composited)"}, {"file": "mill_visuals/exterior/48ft_black_32915_03.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/0092-Racetrack-bg-4.png", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "exterior", "tags": ["color_black", "len_48", "rear", "setting_composited"], "caption": "Black rear 3/4.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "rear 3/4", "exterior_color": "black", "setting": "raceway sunset backdrop (appears composited)"}, {"file": "mill_visuals/garage/48ft_black_32915_04.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2898-scaled-e1774012673143.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["cab_aluminum_black", "color_black", "len_48", "no_lq", "setting_composited"], "caption": "Full-length: black cabinets both sides, white walls, coin floor with white stripe edges.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "full length", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_05.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2908-1-scaled-e1774012764715.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["cab_aluminum_black", "color_black", "countertop", "len_48", "no_lq", "setting_composited"], "caption": "Cabinet run with countertop, black wainscot.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "full length", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_06.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2900-scaled-e1774012637265.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["color_black", "len_48", "no_lq", "setting_composited", "window_large"], "caption": "Large flip-up/awning window in wall; fender cover.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "window", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_07.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2901-scaled-e1774012611297.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["color_black", "len_48", "no_lq", "setting_composited", "window_large"], "caption": "Window and fender cover.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "window", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_08.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_0272.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["color_black", "glass_partition", "len_48", "no_lq", "setting_composited"], "caption": "Glass/aluminum folding partition doors across width.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "partition", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_09.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_0273.jpg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["color_black", "glass_partition", "len_48", "no_lq", "setting_composited"], "caption": "Glass partition closed.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "partition", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_10.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2903-1-scaled-e1774013061943.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["cab_aluminum_black", "color_black", "len_48", "no_lq", "setting_composited"], "caption": "Long view, cabinets, fender covers.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "full length", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_11.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2906-scaled-e1774012459628.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["cab_aluminum_black", "color_black", "countertop", "len_48", "mini_split", "no_lq", "receptacles", "setting_composited", "tool_drawers", "under_cabinet_led"], "caption": "Black/aluminum overhead + base cabinets, gray countertop, under-cabinet LED lights, wall receptacles, wall mini-split A/C, drawer stack.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "workbench", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_12.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2907-scaled-e1774012428236.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["color_black", "len_48", "mini_split", "no_lq", "receptacles", "setting_composited", "tool_drawers"], "caption": "Corner of workbench: mini-split head, receptacles, 9-drawer stack.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "workbench", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_13.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2905-scaled-e1774012444245.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["color_black", "len_48", "no_lq", "setting_composited", "under_cabinet_led"], "caption": "Cabinet run, under-cabinet LEDs.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "workbench", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_14.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2896-scaled-e1774012407710.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["color_black", "gn_stairs", "len_48", "no_lq", "setting_composited"], "caption": "Aluminum ladder/stairs to gooseneck deck; spare tire.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "gn stairs", "exterior_color": "black", "setting": null}, {"file": "mill_visuals/garage/48ft_black_32915_15.jpg", "source_url": "https://www.milltrailers.com/wp-content/uploads/2026/02/IMG_2897-scaled-e1774012393529.jpeg", "page_url": "https://www.milltrailers.com/product/enclosed-gooseneck-trailer-2026-48ft-platinum-car-hauler-w-mini-split-a-c-additional-cabinets-0092/", "area": "garage", "tags": ["color_black", "gn_deck", "len_48", "no_lq", "setting_composited"], "caption": "Gooseneck upper deck with coin floor and storage.", "length_ft": 48, "hitch": "Gooseneck", "lq_layout": null, "view": "gn deck", "exterior_color": "black", "setting": null}]} || { credit:'Photos: Millennium Trailers', base:'photos/', items:[] };
+// Matching rules against the Millennium manifest schema (area, length_ft, hitch, lq_layout, tags like len_44 / bath_corner / no_lq).
+// Swappable: each group = title + a filter over PHOTOS.items. Empty groups show the graceful "No example photos yet" state.
+function photoGroups(){
+  const m = M, L = +cfg.length, groups = [], items = PHOTOS.items;
+  const T = (p, t) => (p.tags||[]).includes(t), area = (p, a) => p.area === a, cap = (p, re) => re.test(p.caption||'');
+  const lq = hasLQ(), lay = curLayout();
+  const lenOf = p => +p.length_ft || +(((p.tags||[]).find(t=>/^len_\d+/.test(t))||'').split('_')[1]) || NaN;
+  // Exterior: same hitch, LQ vs no-LQ match preferred, then closest length, then exterior color.
+  { let hitchNote2 = ''; let pool = items.filter(p => area(p,'exterior') && isFinite(lenOf(p)));
+    const hit = pool.filter(p => !p.hitch || p.hitch === cfg.hitch); if (hit.length) pool = hit;
+    const lqm = pool.filter(p => lq ? !!p.lq_layout : !p.lq_layout); if (lqm.length) pool = lqm;
+    const best = pool.length ? Math.min(...pool.map(p=>Math.abs(lenOf(p)-L))) : null;
+    let ph = pool.filter(p => Math.abs(lenOf(p)-L) === best);
+    const col = cfg.color.toLowerCase().includes('black') || cfg.color.toLowerCase().includes('charcoal') ? 'color_black' : cfg.color.toLowerCase().includes('white') ? 'color_white' : null;
+    if (col) ph = [...ph.filter(p=>T(p,col)), ...ph.filter(p=>!T(p,col))];
+    const hitchNote = cfg.hitch !== 'Gooseneck' && !items.some(p => p.hitch === cfg.hitch) ? ` · no ${cfg.hitch.toLowerCase()} photos yet, gooseneck shown` : '';
+    if (!lq && ph.length && !ph.some(p=>p.lq_layout)) hitchNote2 = ' (no-LQ build)';
+    groups.push({ title:`Exterior — ${cfg.length}' ${cfg.hitch.toLowerCase()}${lq?' with LQ':''}`, photos: ph.slice(0,8),
+      note: ph.length ? `closest example: ${lenOf(ph[0])} ft${hitchNote2}${hitchNote}` : '' }); }
+  if (lq) {
+    groups.push({ title:`Living quarters — ${lay.label}`, photos: items.filter(p => area(p,'lq') && p.lq_layout === lay.id && !T(p,'bath')),
+      note: lay.id === 'LQ16' ? 'listings call it 16\' LQ; bunks shown' : '' });
+    const corner = cfg.bath.startsWith('Corner');
+    groups.push({ title:`Bathroom — ${cfg.bath}`, photos: items.filter(p => T(p,'bath') && (corner ? T(p,'bath_corner') : !T(p,'bath_corner'))) });
+    if (m.slide) groups.push({ title:`Slide-out room (${cfg.slideContent.toLowerCase()})`, photos: [] });
+  } else groups.push({ title:'Open cargo / garage (no LQ)', photos: items.filter(p => area(p,'garage') && T(p,'no_lq')) });
+  groups.push({ title:`Electrical — ${m.E.short}${m.E.tier?' ('+m.E.amps+')':''}`, photos: m.E.tier ? items.filter(p => T(p,'receptacles')) : [],
+    note: m.E.tier ? 'outlets visible; no panel / converter / battery photos yet' : '' });
+  if (m.E.ats || /Onan/.test(cfg.generator||'')) groups.push({ title:`Generator — ${cfg.generator}`, photos: items.filter(p => T(p,'generator_door')), note:'compartment door only; no generator-unit photos yet' });
+  if (m.solarOn) groups.push({ title:'~30W trickle-charge solar', photos: [] });
+  if (cfg.acCargo && cfg.acCargo !== 'No') groups.push({ title:'Cargo-area A/C', photos: items.filter(p => T(p,'mini_split') || T(p,'roof_ac')) });
+  if (cfg.cab !== 'None') {
+    const cabs = items.filter(p => T(p,'cab_aluminum_black') || T(p,'cab_aluminum_white'));
+    const deluxePlus = cfg.cab !== 'Basic';
+    groups.push({ title:`Aluminum cabinets — ${cfg.cab}`, photos: deluxePlus ? [...cabs.filter(p=>T(p,'tool_drawers')||T(p,'countertop')), ...cabs.filter(p=>!(T(p,'tool_drawers')||T(p,'countertop')))].slice(0,8) : cabs.slice(0,8),
+      note: 'aluminum-framed cabinet runs from Platinum builds (not tier-specific)' });
+  }
+  groups.push({ title:'Interior LED ceiling lights', photos: items.filter(p => T(p,'led_ceiling')) });
+  const lmap = { sceneCurb:'Scene lights', sceneRoad:'Scene lights', porch:'Porch light', awningLed:'Awning LED strip', underCab:'Under-cabinet LEDs', accent:'Accent / floor lighting', docking:'Docking lights', loadLights:'Rear load lights', spoiler:'Rear spoiler light' };
+  const lsel = [...new Set(LIGHTS.filter(l=>m.lights[l.id].on).map(l=>lmap[l.id]))];
+  lsel.forEach(k => groups.push({ title:`Lighting — ${k}`, photos: k === 'Under-cabinet LEDs' ? items.filter(p => T(p,'under_cabinet_led')) : [] }));
+  if (cfg.addl === 'Awning') groups.push({ title:'Awning', photos: [] });
+  const fre = cfg.floor.startsWith('TPO') ? /coin floor/i : cfg.floor.startsWith('Aluminum') ? /tread|diamond[- ]plate floor/i : cfg.floor.includes('Marble') ? /marble/i : /plywood floor/i;
+  groups.push({ title:`Floor covering — ${cfg.floor}`, photos: items.filter(p => area(p,'garage') && cap(p, fre)).slice(0,8) });
+  groups.push({ title:'Tie-downs — E-track / D-rings', photos: items.filter(p => T(p,'d_rings') || cap(p,/e-?track|d-?ring/i)) });
+  groups.push({ title:`Rear door — ${FIXED.rearDoor}`, photos: items.filter(p => T(p,'ramp_open') || T(p,'ramp_door')).slice(0,8) });
+  return groups;
+}
+function openPhotos(){
+  let ov = $('photo-modal');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'photo-modal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,18,28,.78);z-index:50;display:flex;align-items:center;justify-content:center';
+    ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); }); document.body.appendChild(ov); }
+  const gs = photoGroups();
+  ov.innerHTML = `<div style="background:#fff;width:min(1100px,94vw);max-height:90vh;overflow:auto;border-radius:12px;padding:14px 18px;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h2 style="margin:0;font-size:18px">Photo examples for your current selections</h2>
+    <button id="ph-close" style="font:700 14px var(--ui);border:0;background:#e9edf2;border-radius:6px;padding:6px 12px;cursor:pointer">Close ✕</button></div>
+    <div style="font-size:11.5px;color:#5d6b7b;margin-bottom:8px"><b>${esc(PHOTOS.credit)}</b> (Millennium Platinum listings on milltrailers.com) · examples of similar builds, not an exact rendering of this configuration. Some photos appear in more than one listing and some interiors are staged/composited; captions describe what is visible. Tap a photo to enlarge; “view listing” opens the source page.${PHOTOS.items.length?'':' <b>No photo manifest loaded yet.</b>'}</div>
+    ${gs.map(gp => `<div style="margin:10px 0 4px;font-weight:700;font-size:13px">${esc(gp.title)} <span style="font-weight:400;color:#6b7a8b;font-size:11px">${esc(gp.note||'')}</span></div>
+      ${gp.photos.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px">${gp.photos.map(p => `<figure style="margin:0;background:#f4f6f8;border-radius:8px;overflow:hidden">
+          <a href="${esc(p.page_url||'#')}" target="_blank" rel="noopener" onclick="event.preventDefault();zoomPhoto(this.firstElementChild)"><img src="${esc(PHOTOS.base + String(p.file).split('/').pop())}" alt="${esc(p.caption||'')}" loading="lazy" style="width:100%;height:130px;object-fit:cover;display:block;cursor:zoom-in"></a>
+          <figcaption style="font-size:10.5px;padding:4px 6px;line-height:1.3">${esc(p.caption||'')}<br><span style="color:#6b7a8b">${p.length_ft?esc(p.length_ft+"' "):''}${esc(p.view||'')}${/composit|staged/.test(p.setting||'')?' · staged/composited':''}</span> · <a href="${esc(p.page_url||p.source_url||'#')}" target="_blank" rel="noopener" style="color:#1d5fb4">view listing ↗</a></figcaption></figure>`).join('')}</div>`
+        : `<div style="font-size:11.5px;color:#8a96a3;background:#f4f6f8;border-radius:6px;padding:8px">No example photos yet for this selection.</div>`}`).join('')}
+  </div>`;
+  $('ph-close').onclick = () => ov.remove();
+}
+function zoomPhoto(img){ const z = document.createElement('div'); z.style.cssText = 'position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  const href = img.parentElement && img.parentElement.href;
+  z.innerHTML = `<img src="${img.src}" style="max-width:94vw;max-height:80vh;border-radius:6px"><div style="position:absolute;bottom:10px;left:12px;right:12px;text-align:center;color:#ddd;font-size:12px">${esc(img.alt)} — ${esc(PHOTOS.credit)}${href?` · <a href="${esc(href)}" target="_blank" rel="noopener" style="color:#8cc4ff" onclick="event.stopPropagation()">view listing ↗</a>`:''}</div>`; z.onclick = () => z.remove(); document.body.appendChild(z); }
+
+// ---------- touch pinch / drag zoom on the floor plan (pointer events; mouse wheel + drag too) ----------
+(function planZoom(){
+  const box = document.getElementById('pz'), svg = document.getElementById('plan'), btn = document.getElementById('pz-reset');
+  let s = 1, tx = 0, ty = 0; const pts = new Map(); let last = null, lastTap = 0;
+  const clamp = () => { s = Math.min(5, Math.max(1, s)); const w = box.clientWidth, h = box.clientHeight;
+    tx = Math.min(0, Math.max(w - w*s, tx)); ty = Math.min(0, Math.max(h - h*s, ty)); };
+  const apply = () => { clamp(); svg.style.transform = s === 1 ? '' : `translate(${tx}px,${ty}px) scale(${s})`; box.classList.toggle('zoomed', s > 1); btn.hidden = s === 1; };
+  const reset = () => { s = 1; tx = ty = 0; apply(); }; window.resetPlanZoom = reset;
+  const zoomAt = (cx, cy, k) => { const ns = Math.min(5, Math.max(1, s*k)); tx = cx - (cx - tx) * ns / s; ty = cy - (cy - ty) * ns / s; s = ns; apply(); };
+  const rel = e => { const r = box.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const state = () => { const a = [...pts.values()]; if (a.length >= 2) { const [p, q] = a; return { d: Math.hypot(p[0]-q[0], p[1]-q[1]), c: [(p[0]+q[0])/2, (p[1]+q[1])/2] }; } return a.length ? { d: 0, c: a[0] } : null; };
+  box.addEventListener('pointerdown', e => { if (e.target === btn) return; pts.set(e.pointerId, rel(e)); last = state();
+    if (e.pointerType !== 'mouse' && pts.size === 1) { const now = Date.now(); if (now - lastTap < 300) { reset(); } lastTap = now; }
+    if (s > 1 || pts.size > 1) box.setPointerCapture(e.pointerId); });
+  box.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, rel(e)); const st = state(); if (!st || !last) { last = st; return; }
+    if (pts.size >= 2 && last.d > 0) { zoomAt(st.c[0], st.c[1], st.d / last.d); tx += st.c[0] - last.c[0]; ty += st.c[1] - last.c[1]; apply(); }
+    else if (pts.size === 1 && s > 1) { tx += st.c[0] - last.c[0]; ty += st.c[1] - last.c[1]; apply(); }
+    last = state(); });
+  const up = e => { pts.delete(e.pointerId); last = state(); };
+  box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up); box.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') up(e); });
+  box.addEventListener('wheel', e => { if (!e.ctrlKey && s === 1 && !e.altKey) return; e.preventDefault(); const [x, y] = rel(e); zoomAt(x, y, e.deltaY < 0 ? 1.15 : 1/1.15); }, { passive: false });
+  box.addEventListener('dblclick', reset); btn.addEventListener('click', reset);
+  window.addEventListener('resize', apply);
+})();
+
+// =====================================================================
+function update(keepLenWhy){
+  M = resolve();
+  document.body.className = STYLE === 'realistic' ? 'rl' : 'bp';
+  buildDefs(M.g);
+  const put = (id, r) => { const el = $(id); el.setAttribute('viewBox', `0 0 1200 ${r.H}`); el.innerHTML = r.svg; };
+  put('sideC', drawSide(true)); put('sideR', drawSide(false)); put('plan', drawPlan());
+  const nm = STYLE === 'realistic' ? 'Realistic' : 'Blueprint';
+  document.querySelectorAll('.tg').forEach(t => t.textContent = nm);
+  const desc = `${cfg.hitch} ${cfg.length}'${hasLQ()?` · ${curLayout().label}${M.slide?' + slide-out':''}`:' · no LQ'}`;
+  $('t-curb').textContent = `Side elevation — curbside (passenger side, front at right) · ${desc}`;
+  $('t-road').textContent = `Side elevation — roadside (driver side, front at left) · ${M.E.short} electrical · ${cfg.cab} cabinets`;
+  $('t-plan').textContent = `Floor plan — top-down, roof removed · cargo ${f(M.g.cargo)}' · ${M.leds} LED fixtures`;
+  document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.style === STYLE));
+  syncControls(keepLenWhy); renderPanels();
+}
+document.querySelectorAll('.seg button').forEach(b => b.onclick = () => { STYLE = b.dataset.style; update(); });
+// URL params for screenshots / deep links (same state object as the controls)
+const qp = new URLSearchParams(location.search);
+if (qp.get('style') === 'realistic') STYLE = 'realistic';
+['hitch','lqWanted','length','layout','lqBP','bath','floor','color','fasteners','addl','elec','cab','acCargo','generator','scale','slideContent'].forEach(k => { if (qp.get(k)) cfg[k] = qp.get(k); });
+['extraBase','extraOH','ledPairs'].forEach(k => { if (qp.get(k)) cfg[k] = +qp.get(k); });
+if (qp.get('slide')) cfg.slide = qp.get('slide') === '1'; if (qp.get('solar')) cfg.solar = qp.get('solar') === '1';
+if (qp.get('lights')) { Object.keys(cfg.lights).forEach(k => cfg.lights[k] = false); qp.get('lights').split(',').forEach(k => cfg.lights[k] = true); }
+$('btn-plat').href = PLATINUM_INVENTORY_URL;
+buildControls(); update();
+if (qp.get('photos') === '1') openPhotos();
+</script>
+</body>
+</html>
